@@ -39,8 +39,10 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .sd-delay-5 { transition-delay: 0.75s; }
 
 .img-reveal { overflow: hidden; }
-.img-reveal img { transform: scale(1.04); transition: transform 1.4s var(--ease); }
+.img-reveal img { transform: scale(1.04); transition: transform 1.4s var(--ease), opacity 0.8s ease; }
 .img-reveal.appear img { transform: scale(1); }
+@keyframes imgFadeIn { from { opacity: 0; } to { opacity: 1; } }
+.room-block__image img, .host__photo img { animation: imgFadeIn 0.8s ease both; }
 
 /* --- Labels & Headings --- */
 .section-label { font-family: var(--font-display); font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 12px; }
@@ -92,9 +94,10 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
    ======================================== */
 .hero { position: relative; height: 100vh; min-height: 600px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 .hero__slideshow { position: absolute; inset: 0; will-change: transform; }
-.hero__slide { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity 2s var(--ease); }
+@keyframes kenburns { from { transform: scale(1); } to { transform: scale(1.06); } }
+.hero__slide { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity 2s var(--ease); filter: contrast(1.02) saturate(1.05); }
 .hero__slide::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.1) 50%, transparent 100%); }
-.hero__slide.is-active { opacity: 1; }
+.hero__slide.is-active { opacity: 1; animation: kenburns 5s ease-out forwards; }
 .hero__content { position: relative; z-index: 2; text-align: center; color: #fff; }
 .hero__label { font-family: var(--font-display); font-size: 11px; letter-spacing: 0.3em; opacity: 0.7; margin-bottom: 20px; }
 .hero__title { font-family: var(--font-display); font-size: 72px; font-weight: 400; letter-spacing: 0.15em; margin-bottom: 20px; }
@@ -130,8 +133,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .gallery__track { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: 0 60px; }
 .gallery__track::-webkit-scrollbar { display: none; }
 .gallery__item { flex: 0 0 55vw; max-width: 700px; scroll-snap-align: start; position: relative; overflow: hidden; border-radius: 0; }
-.gallery__item img { width: 100%; aspect-ratio: 3/2; object-fit: cover; transition: transform 0.8s var(--ease); }
-.gallery__item:hover img { transform: scale(1.03); }
+.gallery__item img { width: 100%; aspect-ratio: 3/2; object-fit: cover; transition: transform 0.8s var(--ease), filter 0.8s var(--ease); filter: brightness(0.97); }
+.gallery__item:hover img { transform: scale(1.05); filter: brightness(1); }
 .gallery__caption { position: relative; padding: 16px 0 0; background: none; font-size: 12px; letter-spacing: 0.1em; color: rgba(255,255,255,0.8); }
 .gallery__nav { display: flex; align-items: center; justify-content: center; gap: 24px; margin-top: 32px; }
 .gallery__arrow { width: 40px; height: 40px; border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.6); font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
