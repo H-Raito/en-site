@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
     slides[current].classList.remove('is-active');
     current = (current + 1) % total;
     slides[current].classList.add('is-active');
-  }, 5000);
+  }, 8000);
 
 
   /* ---------- Gallery Horizontal Scroll ---------- */

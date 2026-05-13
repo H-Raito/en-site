@@ -97,7 +97,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 @keyframes kenburns { from { transform: scale(1); } to { transform: scale(1.06); } }
 .hero__slide { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity 2s var(--ease); filter: contrast(1.02) saturate(1.05); }
 .hero__slide::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.1) 50%, transparent 100%); }
-.hero__slide.is-active { opacity: 1; animation: kenburns 5s ease-out forwards; }
+.hero__slide.is-active { opacity: 1; animation: kenburns 8s ease-out forwards; }
 .hero__content { position: relative; z-index: 2; text-align: center; color: #fff; }
 .hero__label { font-family: var(--font-display); font-size: 11px; letter-spacing: 0.3em; opacity: 0.7; margin-bottom: 20px; }
 .hero__title { font-family: var(--font-display); font-size: 72px; font-weight: 400; letter-spacing: 0.15em; margin-bottom: 20px; }
