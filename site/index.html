@@ -470,16 +470,20 @@
             </div>
             <div class="options-box">
               <h4 class="options-box__title">オプション（追加料金）</h4>
-              <label class="options-box__item">
-                <input type="checkbox" id="optBbq">
-                <span class="options-box__name">BBQコンロ貸出</span>
-                <span class="options-box__price">¥1,000</span>
-              </label>
-              <label class="options-box__item">
-                <input type="checkbox" id="optSauna">
-                <span class="options-box__name">テントサウナ貸出</span>
-                <span class="options-box__price">¥1,000</span>
-              </label>
+              <div class="options-box__chips">
+                <label class="opt-chip">
+                  <input type="checkbox" id="optBbq">
+                  <span class="opt-chip__icon" aria-hidden="true"></span>
+                  <span class="opt-chip__name">BBQコンロ</span>
+                  <span class="opt-chip__price">¥1,000</span>
+                </label>
+                <label class="opt-chip">
+                  <input type="checkbox" id="optSauna">
+                  <span class="opt-chip__icon" aria-hidden="true"></span>
+                  <span class="opt-chip__name">テントサウナ</span>
+                  <span class="opt-chip__price">¥1,000</span>
+                </label>
+              </div>
             </div>
             <button type="button" id="toStep2" class="btn-booking">日付を選択して次へ</button>
           </div>

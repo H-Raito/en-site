@@ -324,15 +324,23 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .included-box__name { display: block; font-size: 12px; color: rgba(255,255,255,0.8); }
 .included-box__desc { display: block; font-size: 10px; color: rgba(255,255,255,0.4); }
 
-/* Options Box（追加料金オプション） */
-.options-box { margin-bottom: 24px; padding: 20px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
-.options-box__title { font-size: 10px; letter-spacing: 0.15em; color: rgba(255,255,255,0.4); margin-bottom: 16px; }
-.options-box__item { display: flex; align-items: center; gap: 12px; padding: 12px; margin-bottom: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); cursor: pointer; transition: border-color 0.3s, background 0.3s; }
-.options-box__item:last-child { margin-bottom: 0; }
-.options-box__item:hover { border-color: rgba(255,255,255,0.2); }
-.options-box__item input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent-light); cursor: pointer; flex-shrink: 0; }
-.options-box__name { flex: 1; font-size: 13px; color: rgba(255,255,255,0.85); letter-spacing: 0.04em; }
-.options-box__price { font-family: var(--font-display); font-size: 14px; color: var(--accent-light); }
+/* Options Box（チップ型） */
+.options-box { margin-bottom: 24px; }
+.options-box__title { font-size: 10px; letter-spacing: 0.15em; color: rgba(255,255,255,0.4); margin-bottom: 14px; }
+.options-box__chips { display: flex; flex-wrap: wrap; gap: 10px; }
+.opt-chip { display: inline-flex; align-items: center; gap: 9px; padding: 11px 18px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); cursor: pointer; user-select: none; transition: background 0.35s var(--ease), border-color 0.35s var(--ease), color 0.35s var(--ease), transform 0.35s var(--ease), box-shadow 0.35s var(--ease); }
+.opt-chip:hover { border-color: rgba(255,255,255,0.32); background: rgba(255,255,255,0.08); }
+.opt-chip input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.opt-chip:has(input:focus-visible) { outline: 1px solid var(--accent-light); outline-offset: 3px; }
+.opt-chip__icon { display: inline-flex; align-items: center; justify-content: center; width: 13px; font-family: var(--font-display); font-size: 13px; line-height: 1; color: var(--accent-light); }
+.opt-chip__icon::before { content: '+'; }
+.opt-chip__name { font-size: 13px; letter-spacing: 0.05em; color: rgba(255,255,255,0.85); }
+.opt-chip__price { font-family: var(--font-display); font-size: 12px; color: rgba(255,255,255,0.5); padding-left: 9px; margin-left: 2px; border-left: 1px solid rgba(255,255,255,0.15); }
+.opt-chip:has(input:checked) { background: rgba(184,149,106,0.10); border-color: rgba(184,149,106,0.45); }
+.opt-chip:has(input:checked) .opt-chip__name { color: #fff; }
+.opt-chip:has(input:checked) .opt-chip__price { color: rgba(255,255,255,0.65); border-left-color: rgba(255,255,255,0.2); }
+.opt-chip:has(input:checked) .opt-chip__icon { color: var(--accent-light); }
+.opt-chip:has(input:checked) .opt-chip__icon::before { content: '✓'; }
 
 /* Buttons */
 .btn-booking { width: 100%; padding: 18px; background: #fff; color: var(--dark-bg); font-size: 12px; letter-spacing: 0.2em; border: none; border-radius: 0; transition: opacity 0.3s; }
