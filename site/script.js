@@ -154,23 +154,20 @@ document.addEventListener('DOMContentLoaded', () => {
      CALENDAR & BOOKING
      ======================================== */
 
-  /* 料金モデル（1泊あたり・税抜）
+  /* 料金モデル（1泊あたり・税込。上乗せの消費税は加算しない）
      4名までベース48,000円、5名目から+6,000円/名、最大10名。乳幼児は無料。 */
   const BASE_GUESTS = 4;
   const BASE_PRICE = 48000;
   const EXTRA_PER_GUEST = 6000;
   const OPTION_BBQ = 1000;
   const OPTION_SAUNA = 1000;
-  const TAX_RATE = 0.10;
 
   function computePrice(adults, nights, bbq, sauna) {
     const perNight = BASE_PRICE + EXTRA_PER_GUEST * Math.max(0, adults - BASE_GUESTS);
     const staySubtotal = perNight * Math.max(nights, 0);
     const optionsTotal = (bbq ? OPTION_BBQ : 0) + (sauna ? OPTION_SAUNA : 0);
-    const subtotal = staySubtotal + optionsTotal;
-    const tax = Math.floor(subtotal * TAX_RATE);
-    const total = subtotal + tax;
-    return { perNight: perNight, staySubtotal: staySubtotal, optionsTotal: optionsTotal, subtotal: subtotal, tax: tax, total: total };
+    const total = staySubtotal + optionsTotal;
+    return { perNight: perNight, staySubtotal: staySubtotal, optionsTotal: optionsTotal, total: total };
   }
 
   function escapeHtml(s) {
@@ -199,7 +196,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const sumNights = document.getElementById('sumNights');
   const sumGuests = document.getElementById('sumGuests');
   const sumSubtotal = document.getElementById('sumSubtotal');
-  const sumTax = document.getElementById('sumTax');
   const sumTotal = document.getElementById('sumTotal');
   const sumOptions = document.getElementById('sumOptions');
 
@@ -330,7 +326,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     sumSubtotal.textContent = nights > 0 ? '¥' + p.staySubtotal.toLocaleString() : '-';
     sumOptions.textContent = nights > 0 && p.optionsTotal > 0 ? '¥' + p.optionsTotal.toLocaleString() : '-';
-    sumTax.textContent = nights > 0 ? '¥' + p.tax.toLocaleString() : '-';
     sumTotal.textContent = nights > 0 ? '¥' + p.total.toLocaleString() : '¥-';
   }
 
@@ -533,14 +528,13 @@ document.addEventListener('DOMContentLoaded', () => {
     var name = document.getElementById('lastName').value + ' ' + document.getElementById('firstName').value;
     var arrival = document.getElementById('arrival').value;
 
-    var paymentRows = '  <div class="confirm-box__row"><span>宿泊料（' + nights + '泊・大人' + adults + '名）</span><span>¥' + p.staySubtotal.toLocaleString() + '</span></div>';
+    var paymentRows = '  <div class="confirm-box__row"><span>宿泊料（' + nights + '泊・大人' + adults + '名・税込）</span><span>¥' + p.staySubtotal.toLocaleString() + '</span></div>';
     if (opts.bbq) {
       paymentRows += '  <div class="confirm-box__row"><span>BBQコンロ貸出</span><span>¥' + OPTION_BBQ.toLocaleString() + '</span></div>';
     }
     if (opts.sauna) {
       paymentRows += '  <div class="confirm-box__row"><span>テントサウナ貸出</span><span>¥' + OPTION_SAUNA.toLocaleString() + '</span></div>';
     }
-    paymentRows += '  <div class="confirm-box__row"><span>消費税（10%）</span><span>¥' + p.tax.toLocaleString() + '</span></div>';
 
     var html = ''
       + '<div class="confirm-box__section">'
@@ -658,8 +652,7 @@ document.addEventListener('DOMContentLoaded', () => {
       + '  <div class="confirm-box__row"><span>宿泊料</span><span>¥' + p.staySubtotal.toLocaleString() + '</span></div>';
     if (b.bbq) html += '  <div class="confirm-box__row"><span>BBQコンロ貸出</span><span>¥' + OPTION_BBQ.toLocaleString() + '</span></div>';
     if (b.sauna) html += '  <div class="confirm-box__row"><span>テントサウナ貸出</span><span>¥' + OPTION_SAUNA.toLocaleString() + '</span></div>';
-    html += '  <div class="confirm-box__row"><span>消費税（10%）</span><span>¥' + p.tax.toLocaleString() + '</span></div>'
-      + '  <div class="confirm-box__total"><span>合計（税込）</span><span>¥' + p.total.toLocaleString() + '</span></div>'
+    html += '  <div class="confirm-box__total"><span>合計（税込）</span><span>¥' + p.total.toLocaleString() + '</span></div>'
       + '</div>';
     document.getElementById('completeSummary').innerHTML = html;
   }
@@ -694,8 +687,7 @@ document.addEventListener('DOMContentLoaded', () => {
         options: p.optionsTotal.toLocaleString(),
         bbq: b.bbq ? 'あり' : 'なし',
         sauna: b.sauna ? 'あり' : 'なし',
-        tax: p.tax.toLocaleString(),
-        total: p.total.toLocaleString(),
+        total: p.total.toLocaleString() + '（税込）',
         notes: b.notes || 'なし'
       };
       try {

@@ -4,24 +4,21 @@ import Stripe from 'stripe';
 
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 
-// 料金モデル（index/script.js と同一・1泊あたり税抜）
+// 料金モデル（index/script.js と同一・1泊あたり税込。上乗せの消費税は加算しない）
 const BASE_GUESTS = 4;
 const BASE_PRICE = 48000;
 const EXTRA_PER_GUEST = 6000;
 const MAX_GUESTS = 10;
 const OPTION_BBQ = 1000;
 const OPTION_SAUNA = 1000;
-const TAX_RATE = 0.10;
 const MAX_BODY_BYTES = 65536; // 64KB 上限
 
 function computePrice(adults, nights, bbq, sauna) {
   const perNight = BASE_PRICE + EXTRA_PER_GUEST * Math.max(0, adults - BASE_GUESTS);
   const staySubtotal = perNight * Math.max(nights, 0);
   const optionsTotal = (bbq ? OPTION_BBQ : 0) + (sauna ? OPTION_SAUNA : 0);
-  const subtotal = staySubtotal + optionsTotal;
-  const tax = Math.floor(subtotal * TAX_RATE);
-  const total = subtotal + tax;
-  return { perNight, staySubtotal, optionsTotal, subtotal, tax, total };
+  const total = staySubtotal + optionsTotal;
+  return { perNight, staySubtotal, optionsTotal, total };
 }
 
 function cap(v, n) {
@@ -110,7 +107,6 @@ export default async function handler(req, res) {
   if (sauna) {
     lineItems.push({ quantity: 1, price_data: { currency: 'jpy', unit_amount: OPTION_SAUNA, product_data: { name: 'テントサウナ貸出' } } });
   }
-  lineItems.push({ quantity: 1, price_data: { currency: 'jpy', unit_amount: price.tax, product_data: { name: '消費税（10%）' } } });
 
   const origin = originFrom(req);
   const customerEmail = b.email && String(b.email).includes('@') ? b.email : undefined;
@@ -130,8 +126,6 @@ export default async function handler(req, res) {
     perNight: price.perNight,
     staySubtotal: price.staySubtotal,
     optionsTotal: price.optionsTotal,
-    subtotal: price.subtotal,
-    tax: price.tax,
     total: price.total
   };
 
