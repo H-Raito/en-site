@@ -3,6 +3,7 @@ node_modules/
 .DS_Store
 .env.local
 .env.example
+!site/.env.example
 *.png
 !site/image/*.png
 !site/image/*.JPG
@@ -20,12 +21,13 @@ image/
 !site/image/
 
 # Unused Next.js scaffolding leftover (en-site-temp), not part of the static site
-.eslintrc.json
-next-env.d.ts
-next.config.mjs
-package.json
-package-lock.json
-postcss.config.mjs
-tailwind.config.ts
-tsconfig.json
-README.md
+# ルートのみ除外（site/package.json は除外しない）
+/.eslintrc.json
+/next-env.d.ts
+/next.config.mjs
+/package.json
+/package-lock.json
+/postcss.config.mjs
+/tailwind.config.ts
+/tsconfig.json
+/README.md

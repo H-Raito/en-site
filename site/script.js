@@ -154,8 +154,30 @@ document.addEventListener('DOMContentLoaded', () => {
      CALENDAR & BOOKING
      ======================================== */
 
-  const PRICE_PER_NIGHT = 60000;
+  /* 料金モデル（1泊あたり・税抜）
+     4名までベース48,000円、5名目から+6,000円/名、最大10名。乳幼児は無料。 */
+  const BASE_GUESTS = 4;
+  const BASE_PRICE = 48000;
+  const EXTRA_PER_GUEST = 6000;
+  const OPTION_BBQ = 1000;
+  const OPTION_SAUNA = 1000;
   const TAX_RATE = 0.10;
+
+  function computePrice(adults, nights, bbq, sauna) {
+    const perNight = BASE_PRICE + EXTRA_PER_GUEST * Math.max(0, adults - BASE_GUESTS);
+    const staySubtotal = perNight * Math.max(nights, 0);
+    const optionsTotal = (bbq ? OPTION_BBQ : 0) + (sauna ? OPTION_SAUNA : 0);
+    const subtotal = staySubtotal + optionsTotal;
+    const tax = Math.floor(subtotal * TAX_RATE);
+    const total = subtotal + tax;
+    return { perNight: perNight, staySubtotal: staySubtotal, optionsTotal: optionsTotal, subtotal: subtotal, tax: tax, total: total };
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
 
   /* DOM refs */
   const calGrid = document.getElementById('calGrid');
@@ -165,6 +187,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const adultsEl = document.getElementById('adults');
   const childrenEl = document.getElementById('children');
+  const optBbqEl = document.getElementById('optBbq');
+  const optSaunaEl = document.getElementById('optSauna');
 
   const dispCheckin = document.getElementById('dispCheckin');
   const dispCheckout = document.getElementById('dispCheckout');
@@ -177,6 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const sumSubtotal = document.getElementById('sumSubtotal');
   const sumTax = document.getElementById('sumTax');
   const sumTotal = document.getElementById('sumTotal');
+  const sumOptions = document.getElementById('sumOptions');
 
   /* Calendar state */
   const today = new Date();
@@ -283,23 +308,30 @@ document.addEventListener('DOMContentLoaded', () => {
     dispNights.textContent = nights > 0 ? nights + '泊' : '';
   }
 
+  function getOptions() {
+    return {
+      bbq: !!(optBbqEl && optBbqEl.checked),
+      sauna: !!(optSaunaEl && optSaunaEl.checked)
+    };
+  }
+
   function updateSidebar() {
     var nights = calcNights();
     var adults = parseInt(adultsEl.value) || 0;
     var children = parseInt(childrenEl.value) || 0;
+    var opts = getOptions();
 
     sumCheckin.textContent = selectedCheckin ? formatDateShort(selectedCheckin) : '-';
     sumCheckout.textContent = selectedCheckout ? formatDateShort(selectedCheckout) : '-';
     sumNights.textContent = nights > 0 ? nights + '泊' : '-';
-    sumGuests.textContent = '大人' + adults + '名 / 子供' + children + '名';
+    sumGuests.textContent = '大人' + adults + '名 / 乳幼児' + children + '名';
 
-    var subtotal = PRICE_PER_NIGHT * Math.max(nights, 0);
-    var tax = Math.floor(subtotal * TAX_RATE);
-    var total = subtotal + tax;
+    var p = computePrice(adults, nights, opts.bbq, opts.sauna);
 
-    sumSubtotal.textContent = nights > 0 ? '¥' + subtotal.toLocaleString() : '-';
-    sumTax.textContent = nights > 0 ? '¥' + tax.toLocaleString() : '-';
-    sumTotal.textContent = nights > 0 ? '¥' + total.toLocaleString() : '¥-';
+    sumSubtotal.textContent = nights > 0 ? '¥' + p.staySubtotal.toLocaleString() : '-';
+    sumOptions.textContent = nights > 0 && p.optionsTotal > 0 ? '¥' + p.optionsTotal.toLocaleString() : '-';
+    sumTax.textContent = nights > 0 ? '¥' + p.tax.toLocaleString() : '-';
+    sumTotal.textContent = nights > 0 ? '¥' + p.total.toLocaleString() : '¥-';
   }
 
   /* Month navigation */
@@ -321,6 +353,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   adultsEl.addEventListener('change', updateSidebar);
   childrenEl.addEventListener('change', updateSidebar);
+  if (optBbqEl) optBbqEl.addEventListener('change', function() { updateSidebar(); if (currentStep === 3) buildConfirmation(); });
+  if (optSaunaEl) optSaunaEl.addEventListener('change', function() { updateSidebar(); if (currentStep === 3) buildConfirmation(); });
 
   renderCalendar();
   updateSidebar();
@@ -493,41 +527,48 @@ document.addEventListener('DOMContentLoaded', () => {
     var nights = calcNights();
     var adults = parseInt(adultsEl.value);
     var children = parseInt(childrenEl.value);
-    var subtotal = PRICE_PER_NIGHT * nights;
-    var tax = Math.floor(subtotal * TAX_RATE);
-    var total = subtotal + tax;
+    var opts = getOptions();
+    var p = computePrice(adults, nights, opts.bbq, opts.sauna);
 
     var name = document.getElementById('lastName').value + ' ' + document.getElementById('firstName').value;
     var arrival = document.getElementById('arrival').value;
 
+    var paymentRows = '  <div class="confirm-box__row"><span>宿泊料（' + nights + '泊・大人' + adults + '名）</span><span>¥' + p.staySubtotal.toLocaleString() + '</span></div>';
+    if (opts.bbq) {
+      paymentRows += '  <div class="confirm-box__row"><span>BBQコンロ貸出</span><span>¥' + OPTION_BBQ.toLocaleString() + '</span></div>';
+    }
+    if (opts.sauna) {
+      paymentRows += '  <div class="confirm-box__row"><span>テントサウナ貸出</span><span>¥' + OPTION_SAUNA.toLocaleString() + '</span></div>';
+    }
+    paymentRows += '  <div class="confirm-box__row"><span>消費税（10%）</span><span>¥' + p.tax.toLocaleString() + '</span></div>';
+
     var html = ''
       + '<div class="confirm-box__section">'
       + '  <h4>宿泊期間</h4>'
-      + '  <div class="confirm-box__row"><span>チェックイン</span><span>' + formatDate(selectedCheckin) + ' 15:00〜</span></div>'
-      + '  <div class="confirm-box__row"><span>チェックアウト</span><span>' + formatDate(selectedCheckout) + ' 〜10:00</span></div>'
+      + '  <div class="confirm-box__row"><span>チェックイン</span><span>' + escapeHtml(formatDate(selectedCheckin)) + ' 15:00〜20:00</span></div>'
+      + '  <div class="confirm-box__row"><span>チェックアウト</span><span>' + escapeHtml(formatDate(selectedCheckout)) + ' 〜12:00</span></div>'
       + '  <div class="confirm-box__row"><span>宿泊数</span><span>' + nights + '泊</span></div>'
-      + '  <div class="confirm-box__row"><span>宿泊人数</span><span>大人' + adults + '名 / 子供' + children + '名</span></div>'
-      + '  <div class="confirm-box__row"><span>到着予定</span><span>' + arrival + '</span></div>'
+      + '  <div class="confirm-box__row"><span>宿泊人数</span><span>大人' + adults + '名 / 乳幼児' + children + '名</span></div>'
+      + '  <div class="confirm-box__row"><span>到着予定</span><span>' + escapeHtml(arrival) + '</span></div>'
       + '</div>'
       + '<div class="confirm-box__section">'
       + '  <h4>お客様情報</h4>'
-      + '  <div class="confirm-box__row"><span>お名前</span><span>' + name + '</span></div>'
-      + '  <div class="confirm-box__row"><span>メール</span><span>' + document.getElementById('email').value + '</span></div>'
-      + '  <div class="confirm-box__row"><span>電話番号</span><span>' + document.getElementById('phone').value + '</span></div>'
-      + '  <div class="confirm-box__row"><span>住所</span><span>〒' + document.getElementById('zip').value + ' ' + document.getElementById('prefecture').value + document.getElementById('address').value + '</span></div>';
+      + '  <div class="confirm-box__row"><span>お名前</span><span>' + escapeHtml(name) + '</span></div>'
+      + '  <div class="confirm-box__row"><span>メール</span><span>' + escapeHtml(document.getElementById('email').value) + '</span></div>'
+      + '  <div class="confirm-box__row"><span>電話番号</span><span>' + escapeHtml(document.getElementById('phone').value) + '</span></div>'
+      + '  <div class="confirm-box__row"><span>住所</span><span>〒' + escapeHtml(document.getElementById('zip').value) + ' ' + escapeHtml(document.getElementById('prefecture').value) + escapeHtml(document.getElementById('address').value) + '</span></div>';
 
     if (document.getElementById('notes').value) {
-      html += '  <div class="confirm-box__row"><span>備考</span><span>' + document.getElementById('notes').value + '</span></div>';
+      html += '  <div class="confirm-box__row"><span>備考</span><span>' + escapeHtml(document.getElementById('notes').value) + '</span></div>';
     }
 
     html += '</div>'
       + '<div class="confirm-box__section">'
-      + '  <h4>お支払い</h4>'
-      + '  <div class="confirm-box__row"><span>宿泊料（' + nights + '泊）</span><span>¥' + subtotal.toLocaleString() + '</span></div>'
-      + '  <div class="confirm-box__row"><span>消費税（10%）</span><span>¥' + tax.toLocaleString() + '</span></div>'
+      + '  <h4>お支払い（Stripe決済）</h4>'
+      + paymentRows
       + '  <div class="confirm-box__total">'
       + '    <span>合計（税込）</span>'
-      + '    <span>¥' + total.toLocaleString() + '</span>'
+      + '    <span>¥' + p.total.toLocaleString() + '</span>'
       + '  </div>'
       + '</div>';
 
@@ -543,83 +584,148 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    var btn = document.getElementById('submitBooking');
-    var originalText = btn.textContent;
-    btn.textContent = '送信中...';
-    btn.disabled = true;
-    btn.style.opacity = '0.6';
-
-    var name = document.getElementById('lastName').value + ' ' + document.getElementById('firstName').value;
-    var nights = calcNights();
-    var adults = parseInt(adultsEl.value);
-    var children = parseInt(childrenEl.value);
-    var subtotal = PRICE_PER_NIGHT * nights;
-    var tax = Math.floor(subtotal * TAX_RATE);
-    var total = subtotal + tax;
-
-    var templateParams = {
-      customer_name: name,
-      customer_email: document.getElementById('email').value,
-      customer_phone: document.getElementById('phone').value,
-      customer_address: '〒' + document.getElementById('zip').value + ' ' + document.getElementById('prefecture').value + document.getElementById('address').value,
-      checkin_date: formatDate(selectedCheckin),
-      checkout_date: formatDate(selectedCheckout),
-      nights: nights,
-      adults: adults,
-      children: children,
-      arrival: document.getElementById('arrival').value,
-      subtotal: subtotal.toLocaleString(),
-      tax: tax.toLocaleString(),
-      total: total.toLocaleString(),
-      notes: document.getElementById('notes').value || 'なし',
-    };
-
-    /* EmailJS が未設定の場合のフォールバック */
-    if (EMAILJS_PUBLIC_KEY === 'YOUR_PUBLIC_KEY' || typeof emailjs === 'undefined') {
-      console.warn('EmailJS not configured. Booking data:', templateParams);
-      setTimeout(function() {
-        showComplete(templateParams);
-      }, 1500);
+    if (!selectedCheckin || !selectedCheckout || calcNights() < 1) {
+      alert('チェックイン日とチェックアウト日を正しく選択してください。');
+      goToStep(1);
       return;
     }
 
+    var btn = document.getElementById('submitBooking');
+    var originalText = btn.textContent;
+    btn.textContent = '決済ページへ移動中...';
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+
+    var nights = calcNights();
+    var adults = parseInt(adultsEl.value);
+    var children = parseInt(childrenEl.value);
+    var opts = getOptions();
+    var idemKey = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2));
+
+    var payload = {
+      idempotency_key: idemKey,
+      checkin: formatDate(selectedCheckin),
+      checkout: formatDate(selectedCheckout),
+      nights: nights,
+      adults: adults,
+      infants: children,
+      bbq: opts.bbq,
+      sauna: opts.sauna,
+      name: document.getElementById('lastName').value + ' ' + document.getElementById('firstName').value,
+      email: document.getElementById('email').value,
+      phone: document.getElementById('phone').value,
+      zip: document.getElementById('zip').value,
+      prefecture: document.getElementById('prefecture').value,
+      address: document.getElementById('address').value,
+      arrival: document.getElementById('arrival').value,
+      notes: document.getElementById('notes').value || ''
+    };
+
     try {
-      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_CUSTOMER, templateParams);
-      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_BUSINESS, templateParams);
-      showComplete(templateParams);
+      var resp = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      var data = await resp.json();
+      if (!resp.ok || !data.url) {
+        throw new Error(data.error || 'checkout session の生成に失敗しました');
+      }
+      window.location.href = data.url;
     } catch (error) {
-      console.error('EmailJS error:', error);
-      alert('送信に失敗しました。\nお手数ですが、お電話またはメールにてご連絡ください。');
+      console.error('Checkout error:', error);
+      alert('決済の準備に失敗しました。\nお手数ですが、お電話（0773-21-6424）またはメールにてご連絡ください。');
       btn.textContent = originalText;
       btn.disabled = false;
       btn.style.opacity = '';
     }
   });
 
-  /* ---------- Success Screen ---------- */
-  function showComplete(params) {
-    document.getElementById('confirmEmail').textContent = params.customer_email;
-
-    var summaryHtml = ''
+  /* ---------- Success Screen（決済成功戻り） ---------- */
+  function renderSuccessSummary(b) {
+    document.getElementById('confirmEmail').textContent = b.email || '';
+    var p = computePrice(parseInt(b.adults) || 0, parseInt(b.nights) || 0, !!b.bbq, !!b.sauna);
+    var html = ''
       + '<div class="confirm-box__section">'
       + '  <h4>宿泊期間</h4>'
-      + '  <div class="confirm-box__row"><span>チェックイン</span><span>' + params.checkin_date + ' 15:00〜</span></div>'
-      + '  <div class="confirm-box__row"><span>チェックアウト</span><span>' + params.checkout_date + ' 〜10:00</span></div>'
-      + '  <div class="confirm-box__row"><span>宿泊数</span><span>' + params.nights + '泊</span></div>'
-      + '  <div class="confirm-box__row"><span>宿泊人数</span><span>大人' + params.adults + '名 / 子供' + params.children + '名</span></div>'
+      + '  <div class="confirm-box__row"><span>チェックイン</span><span>' + escapeHtml(b.checkin || '-') + ' 15:00〜20:00</span></div>'
+      + '  <div class="confirm-box__row"><span>チェックアウト</span><span>' + escapeHtml(b.checkout || '-') + ' 〜12:00</span></div>'
+      + '  <div class="confirm-box__row"><span>宿泊数</span><span>' + escapeHtml(b.nights != null ? b.nights : '-') + '泊</span></div>'
+      + '  <div class="confirm-box__row"><span>宿泊人数</span><span>大人' + escapeHtml(b.adults || 0) + '名 / 乳幼児' + escapeHtml(b.infants || 0) + '名</span></div>'
       + '</div>'
       + '<div class="confirm-box__section">'
-      + '  <h4>お支払い金額</h4>'
-      + '  <div class="confirm-box__row"><span>宿泊料</span><span>¥' + params.subtotal + '</span></div>'
-      + '  <div class="confirm-box__row"><span>消費税（10%）</span><span>¥' + params.tax + '</span></div>'
-      + '  <div class="confirm-box__total">'
-      + '    <span>合計（税込）</span>'
-      + '    <span>¥' + params.total + '</span>'
-      + '  </div>'
+      + '  <h4>お支払い金額（決済完了）</h4>'
+      + '  <div class="confirm-box__row"><span>宿泊料</span><span>¥' + p.staySubtotal.toLocaleString() + '</span></div>';
+    if (b.bbq) html += '  <div class="confirm-box__row"><span>BBQコンロ貸出</span><span>¥' + OPTION_BBQ.toLocaleString() + '</span></div>';
+    if (b.sauna) html += '  <div class="confirm-box__row"><span>テントサウナ貸出</span><span>¥' + OPTION_SAUNA.toLocaleString() + '</span></div>';
+    html += '  <div class="confirm-box__row"><span>消費税（10%）</span><span>¥' + p.tax.toLocaleString() + '</span></div>'
+      + '  <div class="confirm-box__total"><span>合計（税込）</span><span>¥' + p.total.toLocaleString() + '</span></div>'
       + '</div>';
-
-    document.getElementById('completeSummary').innerHTML = summaryHtml;
-    goToStep(4);
+    document.getElementById('completeSummary').innerHTML = html;
   }
+
+  async function handleSuccessfulPayment(b, sessionId) {
+    /* 二重送信・二重表示ガード（session_id 単位） */
+    var guardKey = 'en_booking_done_' + (sessionId || '');
+    if (guardKey !== 'en_booking_done_' && sessionStorage.getItem(guardKey)) {
+      renderSuccessSummary(b);
+      goToStep(4);
+      return;
+    }
+    if (sessionId) sessionStorage.setItem(guardKey, '1');
+
+    renderSuccessSummary(b);
+
+    /* EmailJS で通知メール送信（顧客＋事業者）。決済成功後に送信。 */
+    if (EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY' && typeof emailjs !== 'undefined') {
+      var p = computePrice(parseInt(b.adults) || 0, parseInt(b.nights) || 0, !!b.bbq, !!b.sauna);
+      var templateParams = {
+        customer_name: b.name || '',
+        customer_email: b.email || '',
+        customer_phone: b.phone || '',
+        customer_address: '〒' + (b.zip || '') + ' ' + (b.prefecture || '') + (b.address || ''),
+        checkin_date: b.checkin || '',
+        checkout_date: b.checkout || '',
+        nights: b.nights != null ? b.nights : '',
+        adults: b.adults != null ? b.adults : '',
+        children: b.infants != null ? b.infants : '',
+        arrival: b.arrival || '',
+        subtotal: p.staySubtotal.toLocaleString(),
+        options: p.optionsTotal.toLocaleString(),
+        bbq: b.bbq ? 'あり' : 'なし',
+        sauna: b.sauna ? 'あり' : 'なし',
+        tax: p.tax.toLocaleString(),
+        total: p.total.toLocaleString(),
+        notes: b.notes || 'なし'
+      };
+      try {
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_CUSTOMER, templateParams);
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_BUSINESS, templateParams);
+      } catch (e) {
+        console.error('EmailJS error:', e);
+      }
+    }
+
+    goToStep(4);
+    /* URL から決済クエリを除去 */
+    history.replaceState(null, '', window.location.pathname);
+  }
+
+  /* ---------- Payment success return ---------- */
+  (async function() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('booking') !== 'success') return;
+    var sessionId = params.get('session_id');
+    if (!sessionId) return;
+    try {
+      var r = await fetch('/api/get-session?session_id=' + encodeURIComponent(sessionId));
+      var d = await r.json();
+      if (d.status === 'paid' && d.booking) {
+        await handleSuccessfulPayment(d.booking, sessionId);
+      }
+    } catch (e) {
+      console.error('Session verify error:', e);
+    }
+  })();
 
 });

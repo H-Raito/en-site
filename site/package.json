@@ -1,0 +1,9 @@
+{
+  "name": "en-site",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "stripe": "^22.3.2"
+  }
+}

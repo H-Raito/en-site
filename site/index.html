@@ -26,10 +26,10 @@
       "postalCode": "620-0011",
       "addressCountry": "JP"
     },
-    "priceRange": "¥60,000/night",
+    "priceRange": "¥48,000〜/night",
     "maximumAttendeeCapacity": 10,
     "checkinTime": "15:00",
-    "checkoutTime": "10:00",
+    "checkoutTime": "12:00",
     "image": "/image/IMG_5628.webp"
   }
   </script>
@@ -70,8 +70,6 @@
           <li><a href="#rooms" class="side-panel__link">ROOMS</a></li>
           <li><a href="#neighborhood" class="side-panel__link">NEIGHBORHOOD</a></li>
           <li><a href="#access" class="side-panel__link">ACCESS</a></li>
-          <li><a href="#host" class="side-panel__link">HOST</a></li>
-          <li><a href="#reviews" class="side-panel__link">REVIEWS</a></li>
           <li><a href="#reserve" class="side-panel__link">RESERVE</a></li>
         </ul>
         <div class="side-panel__reserve">
@@ -121,6 +119,9 @@
         <p class="concept__desc sd sd-delay-2">
           1組限定の完全貸し切り。家族の集まり、友人との語らい、企業のイベントまで、あなたの目的に合わせて自由にお使いいただけます。
         </p>
+        <p class="concept__desc sd sd-delay-2">
+          3つの寝室と8組の布団を備え、最大10名様までご宿泊いただけます。窓の外に四季を眺めるテントサウナで、体の底から解きほぐれる時間を。
+        </p>
         <div class="concept__features">
           <div class="feature sd sd-delay-3">
             <span class="feature__value">1組</span>
@@ -131,8 +132,8 @@
             <span class="feature__label">最大定員</span>
           </div>
           <div class="feature sd sd-delay-3">
-            <span class="feature__value">¥60,000</span>
-            <span class="feature__label">1泊 / 税込</span>
+            <span class="feature__value">¥48,000〜</span>
+            <span class="feature__label">1泊 / 税抜</span>
           </div>
           <div class="feature sd sd-delay-3">
             <span class="feature__value">15:00</span>
@@ -189,7 +190,7 @@
       <div class="room-block__text sd">
         <span class="section-label">Room 02</span>
         <h3 class="room-block__title">快適なお部屋</h3>
-        <p class="room-block__desc">最大10名様までご宿泊可能。布団は15組ご用意しており、ご家族やグループでのご利用に最適です。</p>
+        <p class="room-block__desc">3つの寝室に8組の布団をご用意。最大10名様までご宿泊いただけ、ご家族やグループでのご利用に最適です。</p>
       </div>
     </div>
     <div class="room-block">
@@ -212,21 +213,40 @@
         <p class="room-block__desc">旅の疲れを癒すお風呂。心身ともにリラックスしてお過ごしください。</p>
       </div>
     </div>
+    <div class="room-block">
+      <div class="room-block__image sd img-reveal">
+        <img src="./image/sauna.webp" alt="テントサウナ" loading="lazy" onerror="this.style.display='none';this.parentElement.querySelector('.room-block__fallback').style.display='flex'">
+        <div class="room-block__fallback">TENT&nbsp;SAUNA</div>
+      </div>
+      <div class="room-block__text sd">
+        <span class="section-label">Room 05</span>
+        <h3 class="room-block__title">テントサウナ</h3>
+        <p class="room-block__desc">窓の外に四季を眺めながら、とろとろに温まるテントサウナ。とろりとした熱のあとは外気浴で涼やかな風を。貸し切りの時間が、体の底から解けていく。<br><span class="room-block__option">※1泊1,000円（税抜）のオプション・要予約</span></p>
+      </div>
+    </div>
     <div class="amenities sd">
       <h3 class="amenities__title">Amenities</h3>
       <div class="amenities__grid">
         <div class="amenities__item">Wi-Fi</div>
         <div class="amenities__item">プロジェクター</div>
-        <div class="amenities__item">Bluetooth スピーカー</div>
         <div class="amenities__item">キッチン設備</div>
         <div class="amenities__item">冷蔵庫</div>
         <div class="amenities__item">電子レンジ</div>
         <div class="amenities__item">調理器具一式</div>
         <div class="amenities__item">食器類</div>
-        <div class="amenities__item">タオル</div>
-        <div class="amenities__item">布団（15組）</div>
+        <div class="amenities__item">バスタオル</div>
+        <div class="amenities__item">歯ブラシ</div>
+        <div class="amenities__item">カミソリ</div>
+        <div class="amenities__item">ドライヤー</div>
+        <div class="amenities__item">洗濯機</div>
+        <div class="amenities__item">アイロン</div>
+        <div class="amenities__item">延長コード</div>
         <div class="amenities__item">エアコン</div>
-        <div class="amenities__item">駐車場（無料）</div>
+        <div class="amenities__item">布団（8組）</div>
+        <div class="amenities__item">寝室3部屋</div>
+        <div class="amenities__item">BBQコンロ（オプション）</div>
+        <div class="amenities__item">テントサウナ（オプション）</div>
+        <div class="amenities__item">駐車場（無料・3台）</div>
       </div>
     </div>
   </section>
@@ -260,12 +280,62 @@
         <div class="neighborhood__item">
           <div class="neighborhood__item-header">
             <div class="neighborhood__item-left">
-              <span class="neighborhood__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21c0-8 5-15 14-18"/><path d="M5 21c8-4 14-10 14-18"/><path d="M5 21l9-9"/></svg></span>
-              <h4 class="neighborhood__item-title">何もしない散歩道</h4>
+              <span class="neighborhood__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18h18"/><path d="M5 18c0-4 3-7 7-7s7 3 7 7"/><path d="M12 11V4"/><path d="M10 6h4"/></svg></span>
+              <h4 class="neighborhood__item-title">天橋立</h4>
             </div>
-            <span class="neighborhood__item-distance">徒歩圏内</span>
+            <span class="neighborhood__item-distance">車で約45分</span>
           </div>
-          <p class="neighborhood__item-desc">家の前の小道を歩けば、田んぼと山の稜線だけ。目的のない散歩こそ、ここでの一番の体験。空気が違うと気づく、最初の五分。</p>
+          <p class="neighborhood__item-desc">日本三景の一つ。松の緑が砂嘴を縁取り、白砂の道が海をわたる。傘松公園からの「股のぞき」で、龍が空に昇るように見えるという逸話を、ぜひこの目で。</p>
+        </div>
+        <div class="neighborhood__item">
+          <div class="neighborhood__item-header">
+            <div class="neighborhood__item-left">
+              <span class="neighborhood__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 16c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/><path d="M2 20c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/><path d="M5 12V6h14v6"/></svg></span>
+              <h4 class="neighborhood__item-title">舞鶴湾</h4>
+            </div>
+            <span class="neighborhood__item-distance">車で約45分</span>
+          </div>
+          <p class="neighborhood__item-desc">入り組んだ海岸線と穏やかな水面。赤レンガ倉庫群が並ぶ港のたたずまいは、どこか北欧を思わせる。夕映えの時間がとりわけ美しい。</p>
+        </div>
+        <div class="neighborhood__item">
+          <div class="neighborhood__item-header">
+            <div class="neighborhood__item-left">
+              <span class="neighborhood__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 21h10"/><path d="M12 21V10"/><path d="M12 10c-2-3-5-3-5-6 0 3-3 3-3 6"/><path d="M12 10c2-3 5-3 5-6 0 3 3 3 3 6"/></svg></span>
+              <h4 class="neighborhood__item-title">城崎温泉</h4>
+            </div>
+            <span class="neighborhood__item-distance">車で約100分</span>
+          </div>
+          <p class="neighborhood__item-desc">大正浪漫の漂う温泉街。外湯めぐりをしながら柳の並木をそぞろ歩き。浴衣で石畳を歩く時間は、日常を幾重も遠ざける。</p>
+        </div>
+        <div class="neighborhood__item">
+          <div class="neighborhood__item-header">
+            <div class="neighborhood__item-left">
+              <span class="neighborhood__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l8-16 8 16"/><path d="M8 14h8"/></svg></span>
+              <h4 class="neighborhood__item-title">大江山</h4>
+            </div>
+            <span class="neighborhood__item-distance">車で約30分</span>
+          </div>
+          <p class="neighborhood__item-desc">鬼伝説の残る山並み。新緑の春、紅葉の秋。山裾を彩る鬼瓦のモチーフとともに、土産話を一つ拾って。</p>
+        </div>
+        <div class="neighborhood__item">
+          <div class="neighborhood__item-header">
+            <div class="neighborhood__item-left">
+              <span class="neighborhood__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="3"/><path d="M12 12c-3 0-6 2-6 5v4h12v-4c0-3-3-5-6-5z"/><path d="M9 6c0-1 1-2 3-2s3 1 3 2"/></svg></span>
+              <h4 class="neighborhood__item-title">紫陽花寺</h4>
+            </div>
+            <span class="neighborhood__item-distance">車で約5分</span>
+          </div>
+          <p class="neighborhood__item-desc">初夏、参道を彩る紫陽花。雨の朝ほど艶やかに色を増す花々を、静かに見守る時間。最寄りの季節の便り。</p>
+        </div>
+        <div class="neighborhood__item">
+          <div class="neighborhood__item-header">
+            <div class="neighborhood__item-left">
+              <span class="neighborhood__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14c2-1 4-1 6 0s4 1 6 0 4-1 6 0"/><path d="M4 18l2-4h12l2 4"/><path d="M8 14V8h8v6"/></svg></span>
+              <h4 class="neighborhood__item-title">伊根町</h4>
+            </div>
+            <span class="neighborhood__item-distance">車で約90分</span>
+          </div>
+          <p class="neighborhood__item-desc">舟屋が並ぶ、海に寄り添う村。傾きかけた陽の角度だけが時を告げる静かな湾に、日本の原風景が息づく。</p>
         </div>
       </div>
       <div class="neighborhood__info">
@@ -302,62 +372,6 @@
       </div>
       <div class="access__map sd">
         <iframe src="https://maps.google.com/maps?q=京都府福知山市観音寺131-1&t=&z=14&ie=UTF8&iwloc=&output=embed" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="EN - アクセスマップ"></iframe>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== HOST ===== -->
-  <section class="host" id="host">
-    <div class="host__inner sd">
-      <p class="section-label">Host</p>
-      <h2 class="section-heading">運営者のご紹介</h2>
-      <div class="host__profile">
-        <div class="host__photo"><img src="./image/owner.webp" alt="羽星大地"></div>
-        <div class="host__info">
-          <h3 class="host__name">羽星大地</h3>
-          <p class="host__role">EN — 運営責任者</p>
-          <p class="host__greeting">ENへようこそ。<br>1組限定の貸し切りで、時間を忘れるような安らぎをお約束します。<br><br>ご不明な点がございましたら、いつでもお気軽にお問い合わせください。心よりお待ちしております。</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== REVIEWS ===== -->
-  <section class="reviews" id="reviews">
-    <div class="reviews__inner">
-      <div class="sd">
-        <p class="section-label">Reviews</p>
-        <h2 class="section-heading">ゲストの声</h2>
-      </div>
-      <div class="reviews__summary sd">
-        <div class="reviews__rating">
-          <span class="reviews__score">4.9</span>
-          <span class="reviews__stars-lg">★★★★★</span>
-          <span class="reviews__count">（28件の口コミ）</span>
-        </div>
-        <div class="reviews__breakdown">
-          <div class="reviews__breakdown-item"><span class="reviews__breakdown-label">清潔さ</span><div class="reviews__bar"><div class="reviews__bar-fill" style="width:98%"></div></div><span class="reviews__breakdown-score">4.9</span></div>
-          <div class="reviews__breakdown-item"><span class="reviews__breakdown-label">快適さ</span><div class="reviews__bar"><div class="reviews__bar-fill" style="width:96%"></div></div><span class="reviews__breakdown-score">4.8</span></div>
-          <div class="reviews__breakdown-item"><span class="reviews__breakdown-label">立地</span><div class="reviews__bar"><div class="reviews__bar-fill" style="width:92%"></div></div><span class="reviews__breakdown-score">4.6</span></div>
-          <div class="reviews__breakdown-item"><span class="reviews__breakdown-label">ホスト</span><div class="reviews__bar"><div class="reviews__bar-fill" style="width:100%"></div></div><span class="reviews__breakdown-score">5.0</span></div>
-        </div>
-      </div>
-      <div class="reviews__list sd">
-        <article class="review">
-          <div class="review__stars">★★★★★</div>
-          <blockquote class="review__text">家族5人で利用しました。趣のある空間とモダンな設備のバランスが最高でした。子供たちも大喜びで、また利用したいです。</blockquote>
-          <footer class="review__meta"><span class="review__name">田中 様</span><span class="review__type">家族旅行</span><span class="review__verified">宿泊確認済み</span></footer>
-        </article>
-        <article class="review">
-          <div class="review__stars">★★★★★</div>
-          <blockquote class="review__text">友人グループで新年会を兼ねて宿泊。キッチンが充実していて自炊も楽しく、プロジェクターで映画鑑賞もできて最高の時間でした。</blockquote>
-          <footer class="review__meta"><span class="review__name">山田 様</span><span class="review__type">友人グループ</span><span class="review__verified">宿泊確認済み</span></footer>
-        </article>
-        <article class="review">
-          <div class="review__stars">★★★★★</div>
-          <blockquote class="review__text">社員研修で利用しました。落ち着いた環境で集中でき、夜はBBQをしてチームビルディングに最適でした。</blockquote>
-          <footer class="review__meta"><span class="review__name">佐藤 様</span><span class="review__type">企業・団体</span><span class="review__verified">宿泊確認済み</span></footer>
-        </article>
       </div>
     </div>
   </section>
@@ -406,10 +420,10 @@
       <h2 class="reserve__heading sd sd-delay-1">ご予約</h2>
 
       <div class="quick-info sd sd-delay-2">
-        <div class="quick-info__item"><span class="quick-info__label">Check-in</span><span class="quick-info__value">15:00 〜 18:00</span></div>
-        <div class="quick-info__item"><span class="quick-info__label">Check-out</span><span class="quick-info__value">〜 10:00</span></div>
+        <div class="quick-info__item"><span class="quick-info__label">Check-in</span><span class="quick-info__value">15:00 〜 20:00</span></div>
+        <div class="quick-info__item"><span class="quick-info__label">Check-out</span><span class="quick-info__value">〜 12:00</span></div>
         <div class="quick-info__item"><span class="quick-info__label">Capacity</span><span class="quick-info__value">最大10名（1組限定）</span></div>
-        <div class="quick-info__item"><span class="quick-info__label">Price</span><span class="quick-info__value">¥60,000 / night</span></div>
+        <div class="quick-info__item"><span class="quick-info__label">Price</span><span class="quick-info__value">¥48,000〜 / night</span></div>
       </div>
 
       <div class="quick-info sd sd-delay-2">
@@ -443,19 +457,32 @@
               <span id="dispNights" class="date-display__nights"></span>
             </div>
             <div class="guest-select">
-              <div class="guest-select__item"><label>大人</label><select id="adults"><option value="1">1名</option><option value="2" selected>2名</option><option value="3">3名</option><option value="4">4名</option><option value="5">5名</option><option value="6">6名</option><option value="7">7名</option><option value="8">8名</option><option value="9">9名</option><option value="10">10名</option></select></div>
-              <div class="guest-select__item"><label>子供</label><select id="children"><option value="0" selected>なし</option><option value="1">1名</option><option value="2">2名</option><option value="3">3名</option><option value="4">4名</option><option value="5">5名</option></select></div>
+              <div class="guest-select__item"><label>大人（小学生以上）</label><select id="adults"><option value="1">1名</option><option value="2" selected>2名</option><option value="3">3名</option><option value="4">4名</option><option value="5">5名</option><option value="6">6名</option><option value="7">7名</option><option value="8">8名</option><option value="9">9名</option><option value="10">10名</option></select></div>
+              <div class="guest-select__item"><label>乳幼児（無料）</label><select id="children"><option value="0" selected>なし</option><option value="1">1名</option><option value="2">2名</option><option value="3">3名</option><option value="4">4名</option><option value="5">5名</option></select></div>
             </div>
             <div class="included-box">
               <h4 class="included-box__title">料金に含まれるもの</h4>
               <div class="included-box__grid">
                 <div class="included-box__item"><span class="included-box__check">✓</span><div><span class="included-box__name">宿泊費（1組貸し切り）</span><span class="included-box__desc">全館貸し切りでご利用いただけます</span></div></div>
-                <div class="included-box__item"><span class="included-box__check">✓</span><div><span class="included-box__name">布団（最大15組）</span><span class="included-box__desc">お布団はチェックイン時にご用意済み</span></div></div>
+                <div class="included-box__item"><span class="included-box__check">✓</span><div><span class="included-box__name">布団（8組）・寝室3部屋</span><span class="included-box__desc">お布団はチェックイン時にご用意済み</span></div></div>
                 <div class="included-box__item"><span class="included-box__check">✓</span><div><span class="included-box__name">アメニティ・タオル類</span><span class="included-box__desc">バスタオル、フェイスタオル、歯ブラシ</span></div></div>
                 <div class="included-box__item"><span class="included-box__check">✓</span><div><span class="included-box__name">Wi-Fi・プロジェクター</span><span class="included-box__desc">Netflix、YouTube等ご利用可能</span></div></div>
                 <div class="included-box__item"><span class="included-box__check">✓</span><div><span class="included-box__name">キッチン設備</span><span class="included-box__desc">調理器具・食器類・冷蔵庫・電子レンジ完備</span></div></div>
                 <div class="included-box__item"><span class="included-box__check">✓</span><div><span class="included-box__name">駐車場（無料）</span><span class="included-box__desc">敷地内に駐車スペースあり</span></div></div>
               </div>
+            </div>
+            <div class="options-box">
+              <h4 class="options-box__title">オプション（追加料金）</h4>
+              <label class="options-box__item">
+                <input type="checkbox" id="optBbq">
+                <span class="options-box__name">BBQコンロ貸出</span>
+                <span class="options-box__price">¥1,000</span>
+              </label>
+              <label class="options-box__item">
+                <input type="checkbox" id="optSauna">
+                <span class="options-box__name">テントサウナ貸出</span>
+                <span class="options-box__price">¥1,000</span>
+              </label>
             </div>
             <button type="button" id="toStep2" class="btn-booking">日付を選択して次へ</button>
           </div>
@@ -472,8 +499,8 @@
               <div class="form-field"><label>郵便番号 <span class="req">*</span></label><input type="text" id="zip" required></div>
               <div class="form-field"><label>都道府県 <span class="req">*</span></label><input type="text" id="prefecture" required></div>
               <div class="form-field form-field--full"><label>市区町村・番地 <span class="req">*</span></label><input type="text" id="address" required></div>
-              <div class="form-field"><label>到着予定時刻</label><select id="arrival"><option value="15:00">15:00</option><option value="16:00">16:00</option><option value="17:00" selected>17:00</option><option value="18:00">18:00</option></select></div>
-              <div class="form-field form-field--full"><label>備考</label><textarea id="notes" rows="3"></textarea></div>
+              <div class="form-field"><label>到着予定時刻</label><select id="arrival"><option value="15:00">15:00</option><option value="16:00">16:00</option><option value="17:00" selected>17:00</option><option value="18:00">18:00</option><option value="19:00">19:00</option><option value="20:00">20:00</option></select></div>
+              <div class="form-field form-field--full"><label>備考</label><textarea id="notes" rows="3" maxlength="300"></textarea></div>
             </div>
             <div class="booking-actions">
               <button type="button" id="backToStep1" class="btn-booking btn-booking--ghost">戻る</button>
@@ -509,7 +536,7 @@
               <h3>ご予約ありがとうございます</h3>
               <p><span id="confirmEmail"></span> に確認メールをお送りしました。</p>
               <div id="completeSummary" class="confirm-box"></div>
-              <p class="booking-complete__note">ご不明な点がございましたら、お気軽にご連絡ください。<br>TEL: 070-XXXX-XXXX / EMAIL: info@en-kominka.jp</p>
+              <p class="booking-complete__note">ご不明な点がございましたら、お気軽にご連絡ください。<br>TEL: 0773-21-6424 / EMAIL: info@en-kominka.jp</p>
               <a href="#" class="btn-booking" onclick="location.reload(); return false;" style="display:inline-block;margin-top:24px;text-decoration:none;max-width:280px;">トップに戻る</a>
             </div>
           </div>
@@ -521,9 +548,10 @@
             <div class="summary-card__row"><span>チェックイン</span><span id="sumCheckin">-</span></div>
             <div class="summary-card__row"><span>チェックアウト</span><span id="sumCheckout">-</span></div>
             <div class="summary-card__row"><span>宿泊数</span><span id="sumNights">-</span></div>
-            <div class="summary-card__row"><span>宿泊人数</span><span id="sumGuests">大人2名 / 子供0名</span></div>
+            <div class="summary-card__row"><span>宿泊人数</span><span id="sumGuests">大人2名 / 乳幼児0名</span></div>
             <div class="summary-card__divider"></div>
             <div class="summary-card__row"><span>宿泊料</span><span id="sumSubtotal">-</span></div>
+            <div class="summary-card__row"><span>オプション</span><span id="sumOptions">-</span></div>
             <div class="summary-card__row"><span>消費税（10%）</span><span id="sumTax">-</span></div>
             <div class="summary-card__total"><span>合計</span><span id="sumTotal">¥-</span></div>
           </div>
@@ -534,10 +562,11 @@
       <div class="faq sd">
         <h3 class="faq__title">よくあるご質問</h3>
         <div class="faq__list">
+          <details class="faq__item"><summary>チェックインは何時からですか？</summary><p>チェックインは15:00〜20:00です。15:00より早くチェックインされたい場合は、予約情報を確認のうえ、事前にご相談ください。</p></details>
+          <details class="faq__item"><summary>チェックアウトは何時ですか？</summary><p>チェックアウトは12:00までです。</p></details>
+          <details class="faq__item"><summary>駐車場はありますか？</summary><p>はい、敷地内に3台分の駐車スペースを無料でご用意しております。</p></details>
           <details class="faq__item"><summary>食事は付いていますか？</summary><p>食事は付いておりません。キッチン設備が完備されておりますので、お好きなお料理をお楽しみいただけます。</p></details>
-          <details class="faq__item"><summary>何時までチェックインできますか？</summary><p>最終チェックインは18:00となっております。遅れる場合は事前にご連絡ください。</p></details>
           <details class="faq__item"><summary>ペットを連れて行けますか？</summary><p>事前のご相談で対応可能な場合がございます。ペットの種類・サイズをお知らせください。</p></details>
-          <details class="faq__item"><summary>駐車場はありますか？</summary><p>はい、無料の駐車スペースがございます（複数台可）。</p></details>
           <details class="faq__item"><summary>周辺にコンビニやスーパーはありますか？</summary><p>車で5〜10分圏内にコンビニ・スーパーがございます。詳細はチェックイン時にご案内します。</p></details>
         </div>
       </div>
@@ -554,11 +583,11 @@
       <div class="footer__links">
         <div class="footer__col">
           <h4>お問い合わせ</h4>
-          <ul><li>京都府福知山市観音寺131-1</li><li>最寄り駅: 高津駅</li><li>Tel: 070-XXXX-XXXX</li></ul>
+          <ul><li>京都府福知山市観音寺131-1</li><li>最寄り駅: 高津駅</li><li>Tel: 0773-21-6424</li></ul>
         </div>
         <div class="footer__col">
           <h4>施設情報</h4>
-          <ul><li>チェックイン: 15:00</li><li>チェックアウト: 10:00</li><li>定員: 最大10名</li></ul>
+          <ul><li>チェックイン: 15:00〜20:00</li><li>チェックアウト: 12:00</li><li>定員: 最大10名</li></ul>
         </div>
       </div>
     </div>
