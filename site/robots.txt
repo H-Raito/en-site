@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://en-kominka.vercel.app/sitemap.xml
+Sitemap: https://en-kyoto.vercel.app/sitemap.xml

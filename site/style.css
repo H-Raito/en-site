@@ -95,9 +95,9 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .hero { position: relative; height: 100vh; min-height: 600px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 .hero__slideshow { position: absolute; inset: 0; will-change: transform; }
 .hero__slide { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity 2s var(--ease); filter: contrast(1.02) saturate(1.05); }
-.hero__slide::after { content: ''; position: absolute, inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.1) 50%, transparent 100%); }
+.hero__slide::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.1) 50%, transparent 100%); }
 .hero__slide.is-active { opacity: 1; }
-.hero__content { position: relative; z-index: 2; text-align: center; color: #fff; }
+.hero__content { position: relative; z-index: 2; text-align: center; color: #fff; text-shadow: 0 1px 18px rgba(0,0,0,0.55), 0 0 46px rgba(0,0,0,0.35); }
 .hero__label { font-family: var(--font-display); font-size: 11px; letter-spacing: 0.3em; opacity: 0.7; margin-bottom: 20px; }
 .hero__title { font-family: var(--font-display); font-size: 72px; font-weight: 400; letter-spacing: 0.15em; margin-bottom: 20px; }
 .hero__subtitle { font-family: var(--font-serif); font-weight: 300; font-size: 16px; letter-spacing: 0.15em; opacity: 0.85; }
@@ -127,7 +127,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
    ======================================== */
 .gallery { padding: 120px 0; background: var(--dark-bg); color: #fff; }
 .gallery__header { text-align: center; margin-bottom: 48px; }
-.gallery__header .section-label { color: rgba(255,255,255,0.4); }
+.gallery__header .section-label { color: rgba(255,255,255,0.55); }
 .gallery__header .section-heading { color: #fff; }
 .gallery__track { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: 0 60px; }
 .gallery__track::-webkit-scrollbar { display: none; }
@@ -136,9 +136,9 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .gallery__item:hover img { transform: scale(1.05); filter: brightness(1); }
 .gallery__caption { position: relative; padding: 16px 0 0; background: none; font-size: 12px; letter-spacing: 0.1em; color: rgba(255,255,255,0.8); }
 .gallery__nav { display: flex; align-items: center; justify-content: center; gap: 24px; margin-top: 32px; }
-.gallery__arrow { width: 40px; height: 40px; border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.6); font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
+.gallery__arrow { width: 40px; height: 40px; border: 1px solid rgba(255,255,255,0.35); color: rgba(255,255,255,0.75); font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
 .gallery__arrow:hover { border-color: rgba(255,255,255,0.5); color: #fff; }
-.gallery__counter { font-family: var(--font-display); font-size: 13px; letter-spacing: 0.1em; color: rgba(255,255,255,0.5); }
+.gallery__counter { font-family: var(--font-display); font-size: 13px; letter-spacing: 0.1em; color: rgba(255,255,255,0.65); }
 
 /* ========================================
    ROOMS
@@ -270,7 +270,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* Quick info */
 .quick-info { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; padding-bottom: 32px; border-bottom: 1px solid rgba(255,255,255,0.08); }
 .quick-info__item { display: flex; flex-direction: column; gap: 4px; }
-.quick-info__label { font-size: 12px; letter-spacing: 0.1em; color: rgba(255,255,255,0.4); }
+.quick-info__label { font-size: 12px; letter-spacing: 0.1em; color: rgba(255,255,255,0.55); }
 .quick-info__value { font-size: 15px; color: rgba(255,255,255,0.9); }
 
 /* Booking Layout */
@@ -278,9 +278,9 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 
 /* Progress */
 .booking-progress { display: flex; gap: 8px; margin-bottom: 40px; }
-.booking-progress__step { font-size: 11px; letter-spacing: 0.1em; color: rgba(255,255,255,0.3); padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.booking-progress__step { font-size: 11px; letter-spacing: 0.1em; color: rgba(255,255,255,0.55); padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); }
 .booking-progress__step.is-active { color: #fff; border-bottom-color: var(--accent-light); }
-.booking-progress__step.is-done { color: rgba(255,255,255,0.5); border-bottom-color: rgba(255,255,255,0.3); }
+.booking-progress__step.is-done { color: rgba(255,255,255,0.65); border-bottom-color: rgba(255,255,255,0.3); }
 
 .booking-step { display: none; }
 .booking-step.is-active { display: block; }
@@ -288,10 +288,10 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* Calendar */
 .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .cal-nav__month { font-size: 14px; font-weight: 400; letter-spacing: 0.1em; }
-.cal-nav__btn { color: rgba(255,255,255,0.5); font-size: 20px; padding: 4px 12px; transition: color 0.3s; }
+.cal-nav__btn { color: rgba(255,255,255,0.65); font-size: 20px; padding: 4px 12px; transition: color 0.3s; }
 .cal-nav__btn:hover { color: #fff; }
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 24px; }
-.cal-header { text-align: center; font-size: 10px; letter-spacing: 0.1em; color: rgba(255,255,255,0.3); padding: 8px 0; }
+.cal-header { text-align: center; font-size: 10px; letter-spacing: 0.1em; color: rgba(255,255,255,0.55); padding: 8px 0; }
 .cal-day { text-align: center; padding: 10px 4px; font-size: 13px; color: rgba(255,255,255,0.7); cursor: pointer; transition: all 0.2s; }
 .cal-day:hover:not(.cal-day--past):not(.cal-day--empty) { background: rgba(255,255,255,0.08); }
 .cal-day--empty { cursor: default; }
@@ -303,7 +303,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* Date Display */
 .date-display { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding: 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
 .date-display__item { flex: 1; }
-.date-display__label { display: block; font-size: 10px; letter-spacing: 0.15em; color: rgba(255,255,255,0.4); margin-bottom: 4px; }
+.date-display__label { display: block; font-size: 10px; letter-spacing: 0.15em; color: rgba(255,255,255,0.55); margin-bottom: 4px; }
 .date-display__value { font-size: 14px; }
 .date-display__arrow { color: rgba(255,255,255,0.2); }
 .date-display__nights { font-size: 12px; color: var(--accent-light); }
@@ -311,13 +311,13 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* Guest Select */
 .guest-select { display: flex; gap: 16px; margin-bottom: 24px; }
 .guest-select__item { flex: 1; }
-.guest-select__item label { display: block; font-size: 12px; letter-spacing: 0.08em; color: rgba(255,255,255,0.4); margin-bottom: 6px; }
+.guest-select__item label { display: block; font-size: 12px; letter-spacing: 0.08em; color: rgba(255,255,255,0.55); margin-bottom: 6px; }
 .guest-select__item select { width: 100%; padding: 14px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 0; color: #fff; font-family: var(--font-sans); font-size: 14px; appearance: none; cursor: pointer; outline: none; }
 .guest-select__item select:focus { border-color: var(--accent-light); }
 
 /* Included Box */
 .included-box { margin-bottom: 24px; padding: 20px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
-.included-box__title { font-size: 10px; letter-spacing: 0.15em; color: rgba(255,255,255,0.4); margin-bottom: 16px; }
+.included-box__title { font-size: 10px; letter-spacing: 0.15em; color: rgba(255,255,255,0.55); margin-bottom: 16px; }
 .included-box__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .included-box__item { display: flex; gap: 10px; }
 .included-box__check { color: var(--accent-light); font-size: 12px; flex-shrink: 0; margin-top: 2px; }
@@ -326,7 +326,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 
 /* Options Box（チップ型） */
 .options-box { margin-bottom: 24px; }
-.options-box__title { font-size: 10px; letter-spacing: 0.15em; color: rgba(255,255,255,0.4); margin-bottom: 14px; }
+.options-box__title { font-size: 10px; letter-spacing: 0.15em; color: rgba(255,255,255,0.55); margin-bottom: 14px; }
 .options-box__chips { display: flex; flex-wrap: wrap; gap: 10px; }
 .opt-chip { display: inline-flex; align-items: center; gap: 9px; padding: 11px 18px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); cursor: pointer; user-select: none; transition: background 0.35s var(--ease), border-color 0.35s var(--ease), color 0.35s var(--ease), transform 0.35s var(--ease), box-shadow 0.35s var(--ease); }
 .opt-chip:hover { border-color: rgba(255,255,255,0.32); background: rgba(255,255,255,0.08); }
@@ -351,18 +351,18 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* Form */
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
 .form-field { display: flex; flex-direction: column; }
-.form-field label { font-size: 12px; letter-spacing: 0.08em; color: rgba(255,255,255,0.4); margin-bottom: 6px; }
+.form-field label { font-size: 12px; letter-spacing: 0.08em; color: rgba(255,255,255,0.55); margin-bottom: 6px; }
 .form-field .req { color: var(--accent-light); }
 .form-field input, .form-field select, .form-field textarea { padding: 14px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 0; color: #fff; font-family: var(--font-sans); font-size: 14px; outline: none; transition: border-color 0.3s; }
 .form-field input:focus, .form-field select:focus, .form-field textarea:focus { border-color: var(--accent-light); box-shadow: none; }
 .form-field--full { grid-column: span 2; }
 .form-field textarea { resize: vertical; }
-.field-error { display: block; font-size: 11px; color: #e88; margin-top: 4px; letter-spacing: 0.04em; }
+.field-error { display: block; font-size: 11px; color: #F0A9A9; margin-top: 4px; letter-spacing: 0.04em; }
 .booking-actions { display: flex; gap: 16px; }
 .booking-actions .btn-booking { flex: 1; }
 
 /* Terms */
-.booking-terms { display: flex; align-items: flex-start; gap: 10px; margin-top: 24px; font-size: 12px; color: rgba(255,255,255,0.5); cursor: pointer; }
+.booking-terms { display: flex; align-items: flex-start; gap: 10px; margin-top: 24px; font-size: 12px; color: rgba(255,255,255,0.65); cursor: pointer; }
 .booking-terms input[type="checkbox"] { margin-top: 3px; accent-color: var(--accent-light); }
 .booking-terms a { color: var(--accent-light); text-decoration: underline; text-underline-offset: 2px; }
 
@@ -370,13 +370,13 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .confirm-box { margin-bottom: 24px; }
 .confirm-box__section { margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.08); }
 .confirm-box__section:last-child { border-bottom: none; }
-.confirm-box__section h4 { font-size: 10px; letter-spacing: 0.15em; color: rgba(255,255,255,0.4); margin-bottom: 12px; }
+.confirm-box__section h4 { font-size: 10px; letter-spacing: 0.15em; color: rgba(255,255,255,0.55); margin-bottom: 12px; }
 .confirm-box__row { display: flex; justify-content: space-between; font-size: 13px; color: rgba(255,255,255,0.7); margin-bottom: 8px; }
 .confirm-box__total { display: flex; justify-content: space-between; font-size: 15px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 8px; }
 
 /* Cancel Policy */
 .cancel-policy { margin-bottom: 24px; padding: 20px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
-.cancel-policy__title { font-size: 13px; letter-spacing: 0.15em; color: rgba(255,255,255,0.5); margin-bottom: 16px; }
+.cancel-policy__title { font-size: 13px; letter-spacing: 0.15em; color: rgba(255,255,255,0.65); margin-bottom: 16px; }
 .cancel-policy__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .cancel-policy__item { text-align: center; padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
 .cancel-policy__item span:first-child { display: block; font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 6px; }
@@ -387,11 +387,11 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .booking-complete { text-align: center; padding: 40px 0; }
 .booking-complete h3 { font-family: var(--font-serif); font-weight: 400; font-size: 22px; margin-bottom: 16px; }
 .booking-complete p { font-size: 14px; color: rgba(255,255,255,0.6); margin-bottom: 32px; }
-.booking-complete__note { font-size: 13px; color: rgba(255,255,255,0.4); margin-top: 24px; }
+.booking-complete__note { font-size: 13px; color: rgba(255,255,255,0.55); margin-top: 24px; }
 
 /* Summary Card */
 .summary-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); padding: 28px; position: sticky; top: 100px; color: #fff; }
-.summary-card__title { font-size: 10px; letter-spacing: 0.15em; color: rgba(255,255,255,0.4); margin-bottom: 20px; }
+.summary-card__title { font-size: 10px; letter-spacing: 0.15em; color: rgba(255,255,255,0.55); margin-bottom: 20px; }
 .summary-card__row { display: flex; justify-content: space-between; font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 10px; }
 .summary-card__divider { height: 1px; background: rgba(255,255,255,0.08); margin: 16px 0; }
 .summary-card__total { display: flex; justify-content: space-between; font-size: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1); }
@@ -405,7 +405,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .faq__item summary::after { content: '+'; font-size: 16px; color: rgba(255,255,255,0.3); }
 .faq__item[open] summary::after { content: '−'; }
 .faq__item summary:hover { color: #fff; }
-.faq__item p { padding-bottom: 16px; font-size: 13px; color: rgba(255,255,255,0.4); line-height: 1.8; }
+.faq__item p { padding-bottom: 16px; font-size: 13px; color: rgba(255,255,255,0.6); line-height: 1.8; }
 
 /* ========================================
    FOOTER
@@ -418,7 +418,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .footer__col h4 { font-size: 11px; letter-spacing: 0.15em; color: rgba(255,255,255,0.5); margin-bottom: 12px; }
 .footer__col ul { list-style: none; }
 .footer__col li { font-size: 13px; color: rgba(255,255,255,0.7); margin-bottom: 4px; }
-.footer__bottom { margin-top: 48px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; font-size: 11px; letter-spacing: 0.1em; color: rgba(255,255,255,0.3); }
+.footer__bottom { margin-top: 48px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; font-size: 11px; letter-spacing: 0.1em; color: rgba(255,255,255,0.6); }
 
 /* ========================================
    RESPONSIVE
@@ -440,7 +440,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 @media (max-width: 768px) {
   #header { padding: 0 24px; height: 60px; }
   .header__cta { display: none; }
-  .hero__content { bottom: 60px; left: 24px; }
+
   .hero__title { font-size: 48px; }
   .hero__subtitle { font-size: 14px; }
   .concept { padding: 80px 0; }
@@ -486,3 +486,124 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   .gallery__item { flex: 0 0 90vw; }
   .section-heading { font-size: 26px; }
 }
+
+/* ========================================
+   キーボード操作性とダイアログ
+   ======================================== */
+
+/* キーボードフォーカスの可視化（WCAG 2.4.7） */
+:is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent-light);
+  outline-offset: 2px;
+}
+.cal-day[role="button"]:focus-visible {
+  outline-offset: -2px;
+}
+
+/* 利用規約ダイアログ */
+.terms-dialog {
+  width: min(640px, 92vw);
+  padding: 0;
+  border: none;
+  background: var(--card-bg);
+  color: var(--text-primary);
+}
+.terms-dialog::backdrop { background: rgba(20, 16, 12, 0.55); }
+.terms-dialog__inner { padding: 40px; max-height: 82vh; overflow-y: auto; }
+.terms-dialog__title { font-family: var(--font-serif); font-weight: 300; font-size: 20px; letter-spacing: 0.06em; margin-bottom: 24px; }
+.terms-dialog h4 { font-size: 12px; letter-spacing: 0.15em; color: var(--text-muted); margin: 24px 0 12px; }
+.terms-dialog p, .terms-dialog li { font-size: 13px; color: var(--text-secondary); line-height: 1.9; }
+.terms-dialog ul { list-style: disc; padding-left: 1.4em; }
+.terms-dialog li { margin-bottom: 4px; }
+.terms-dialog table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+.terms-dialog th, .terms-dialog td { border: 1px solid var(--border); padding: 10px 12px; font-size: 13px; color: var(--text-secondary); text-align: left; font-weight: 300; }
+.terms-dialog__close {
+  margin-top: 28px;
+  width: 100%;
+  padding: 14px;
+  background: var(--btn-bg);
+  color: #fff;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+  border: none;
+}
+
+/* hidden 属性を確実に機能させる */
+[hidden] { display: none !important; }
+
+/* ========================================
+   2026-10 全面改修分（HERO / GALLERY / RESERVE / LIGHTBOX）
+   ======================================== */
+
+/* --- HERO: PC/スマホでスライド画像を切り替え --- */
+.hero__slide--a { background-image: url('./image/16_house_flowers.webp'); background-position: center 55%; }
+.hero__slide--b { background-image: url('./image/06_living_projector.webp'); background-position: center; }
+.hero__slide--c { background-image: url('./image/13_rose_garden.webp'); background-position: center; }
+.hero__slide--d { background-image: url('./image/04_kitchen_island.webp'); background-position: center; }
+
+@media (max-width: 768px) {
+  .hero__slide--a { background-image: url('./image/01_entrance.webp'); background-position: center 72%; }
+  .hero__slide--b { background-image: url('./image/09_flower_kitchen.webp'); background-position: center 62%; }
+  .hero__slide--c { background-image: url('./image/02_garden_bench.webp'); background-position: center 55%; }
+  .hero__slide--d { background-image: url('./image/10_bedroom_warm.webp'); background-position: center; }
+}
+
+/* HERO コピー */
+.hero__copy { font-family: var(--font-serif); font-weight: 300; font-size: 22px; letter-spacing: 0.12em; margin-bottom: 14px; }
+.hero__meta { font-family: var(--font-display); font-size: 11px; letter-spacing: 0.18em; opacity: 0.75; margin-top: 6px; }
+@media (max-width: 768px) {
+  .hero__slide::after { background: linear-gradient(to top, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.44) 50%, rgba(0,0,0,0.14) 100%); }
+  .hero__copy { font-size: 17px; }
+  .hero__meta { font-size: 10px; letter-spacing: 0.12em; }
+}
+
+/* --- GALLERY: 拡大ボタン --- */
+.gallery__zoom { display: block; width: 100%; padding: 0; border: none; background: none; cursor: zoom-in; }
+.gallery__zoom img { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; transition: transform 0.8s var(--ease), filter 0.8s var(--ease); filter: brightness(0.97); }
+.gallery__zoom:hover img { transform: scale(1.05); filter: brightness(1); }
+
+/* --- LIGHTBOX --- */
+.lightbox { position: fixed; inset: 0; z-index: 300; display: none; align-items: center; justify-content: center; background: rgba(15, 12, 10, 0.92); padding: 24px; }
+.lightbox.is-open { display: flex; }
+.lightbox__img { max-width: min(1100px, 92vw); max-height: 78vh; width: auto; height: auto; object-fit: contain; box-shadow: 0 12px 60px rgba(0,0,0,0.5); }
+.lightbox__caption { position: absolute; bottom: 26px; left: 0; right: 0; text-align: center; font-family: var(--font-display); font-size: 13px; letter-spacing: 0.12em; color: rgba(255,255,255,0.8); }
+.lightbox__close { position: absolute; top: 20px; right: 24px; width: 44px; height: 44px; color: #fff; font-size: 26px; line-height: 1; border: 1px solid rgba(255,255,255,0.35); border-radius: 50%; background: rgba(0,0,0,0.35); }
+.lightbox__nav { position: absolute; top: 50%; transform: translateY(-50%); width: 48px; height: 48px; color: #fff; font-size: 22px; border: 1px solid rgba(255,255,255,0.35); border-radius: 50%; background: rgba(0,0,0,0.35); transition: background 0.3s; }
+.lightbox__nav:hover { background: rgba(255,255,255,0.15); }
+.lightbox__nav--prev { left: 18px; }
+.lightbox__nav--next { right: 18px; }
+.lightbox__counter { position: absolute; top: 30px; left: 26px; font-family: var(--font-display); font-size: 13px; letter-spacing: 0.12em; color: rgba(255,255,255,0.7); }
+
+/* --- RESERVE: Airbnb導線 --- */
+.reserve-lead { margin-bottom: 32px; padding: 36px 32px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
+.reserve-lead__title { font-family: var(--font-serif); font-weight: 300; font-size: 20px; letter-spacing: 0.06em; margin-bottom: 14px; }
+.reserve-lead__text { font-size: 14px; color: rgba(255,255,255,0.7); line-height: 1.9; margin-bottom: 24px; }
+.reserve-cta { display: inline-block; width: auto; min-width: 280px; padding: 18px 40px; text-decoration: none; text-align: center; }
+.reserve-lead__note { margin-top: 18px; font-size: 13px; color: rgba(255,255,255,0.55); }
+.reserve-lead__note a { color: rgba(255,255,255,0.85); text-underline-offset: 3px; }
+
+.reserve-notice { margin-top: 8px; padding: 20px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
+.reserve-notice p { font-size: 13px; color: rgba(255,255,255,0.6); line-height: 1.9; margin-bottom: 8px; }
+.reserve-notice p:last-child { margin-bottom: 0; }
+
+/* 表示専用オプションチップ（旧チェックボックス型の外観を維持） */
+.opt-chip--static { cursor: default; user-select: text; }
+.opt-chip--static:hover { border-color: rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); }
+
+/* ご予約の流れカード */
+.flow-card__list { margin: 0; padding: 0 0 0 1.2em; }
+.flow-card__list li { font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.9; margin-bottom: 10px; }
+.flow-card__note { font-size: 12px; color: rgba(255,255,255,0.5); line-height: 1.8; }
+.flow-card__note a { color: rgba(255,255,255,0.8); }
+
+/* ACCESS リンク */
+.access__link { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.access__link:hover { color: var(--accent-light); }
+
+/* 横スクロール抑止（オフキャンバスのサイドパネル対策・iOS Safari含む） */
+html { overflow-x: clip; }
+
+/* 閉じているサイドパネルはフォーカス・読み上げの対象外に */
+.side-panel { visibility: hidden; transition: transform 0.5s var(--ease), visibility 0s 0.5s; }
+.side-panel.is-open { visibility: visible; transition: transform 0.5s var(--ease); }

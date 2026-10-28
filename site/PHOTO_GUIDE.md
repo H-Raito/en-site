@@ -1,49 +1,33 @@
-# EN サイト 写真差し替えガイド
+# EN サイト 写真ガイド（2026-10-28 更新）
 
-## 使っている写真と場所
+実写真19枚（`EN_19_sharpened_complete.zip` の `website_webp/`）を `site/image/` に配置しています。
+対応表は ZIP 同梱の `image_manifest.csv` / `image_manifest.json` が正本です。
 
-| ファイル名 | 使っている場所 | 推奨サイズ | 向き |
-|-----------|--------------|-----------|------|
-| `IMG_5628.webp` | ヒーロー1枚目、ギャラリー#01 | 1440x1080以上 | 横 |
-| `IMG_5631.webp` | ヒーロー2枚目、ギャラリー#02、Room 01 | 1440x1080以上 | 横 |
-| `IMG_5632.webp` | ヒーロー3枚目、ギャラリー#03、Room 02、Concept | 1440x1080以上 | 横 |
-| `IMG_5634.webp` | ヒーロー4枚目、ギャラリー#04 | 1440x1080以上 | 横 |
-| `IMG_5645.webp` | ギャラリー#05 | 1440x1080以上 | 横 |
-| `IMG_5656.webp` | ギャラリー#06、Room 03 | 1440x1080以上 | 横 |
-| `IMG_5664.webp` | ギャラリー#07、Room 04 | 1440x1080以上 | 横 |
-| `IMG_5675.webp` | ギャラリー#08 | 1440x1080以上 | 横 |
-| `IMG_5677.webp` | ギャラリー#09 | 1440x1080以上 | 横 |
-| `sauna.webp` | Room 05（テントサウナ）。現在はUnsplashのフリー写真（樽型サウナ・商用利用OK・クレジット不要）を仮配置中。実物のテントサウナ写真が用意できたら同じファイル名で上書きしてください。未配置時はHTML側でグラデーションのプレースホルダ表示にフォールバックします。 | 1440x1080以上 | 横 |
+## 配置ルール
 
-> ※ `owner.webp` は host（運営者）セクション削除に伴い現在未使用です。
+- 19枚すべて `site/image/` 直下に実ファイル名のまま配置。
+- `og-image.jpg` のみ SNS/OGP 用に `16_house_flowers.jpg`（高画質JPEG）の複製。
+- **テントサウナの実写真は存在しない**ため、サウナは文字での紹介のみ。仮写真・AI画像は使用禁止。
+- 写真の差し替えは、同じ実写真で同じファイル名を上書きする方法で行う（HTML変更不要）。
+- 差し替え時は `image_manifest.csv` の内容（何が写っているか）に沿って alt / キャプションを必ず更新する。
 
-## 差し替え手順
+## HERO の使い分け
 
-### 1. 新しい写真をWebPに変換
+- PC（769px以上）: `16_house_flowers` → `06_living_projector` → `13_rose_garden` → `04_kitchen_island`
+- スマホ（768px以下）: `01_entrance` → `09_flower_kitchen` → `02_garden_bench` → `10_bedroom_warm`
+
+切り替えは `style.css` の `.hero__slide--a〜d` とメディアクエリで行う。画像ファイル自体は加工しない。
+
+## GALLERY
+
+19枚を manifest の `gallery_position` 順で掲載。キャプションは写っている内容と一致させること
+（トイレ写真を「キッチン」と表示するなどの誤ラベルは禁止）。
+
+## ローカル確認と反映
+
 ```bash
-# 1枚ずつ変換
-cwebp -q 85 新しい写真.jpg -o 置き換えるファイル名.webp
-
-# 例: ヒーロー1枚目を変える場合
-cwebp -q 85 DSC_0001.jpg -o IMG_5628.webp
-```
-
-### 2. ファイルを上書き
-同じファイル名で `site/image/` に上書き保存するだけ。
-HTMLの変更は不要。
-
-### 3. 確認してpush
-```bash
-# ローカルで確認
 cd site && python3 -m http.server 9000
-# ブラウザで http://localhost:9000 を開く
-
-# 問題なければpush
-cd .. && git add site/image/ && git commit -m "update: 写真を更新" && git push
+# http://localhost:9000 を開いて確認
 ```
 
-## 注意
-- **同じファイル名**で上書きすればHTML変更不要
-- 新しい写真を**追加**したい場合はHTMLの編集が必要
-- WebP変換前にJPGの元画像をバックアップしておくこと
-- `cwebp` がない場合: `brew install webp` でインストール
+push 後、Vercel が自動デプロイする。
