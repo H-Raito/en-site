@@ -38,8 +38,8 @@
     "image": "https://en-kyoto.vercel.app/image/og-image.jpg"
   }
   </script>
-  <link rel="preload" as="image" href="./image/16_house_flowers.webp" media="(min-width: 769px)">
-  <link rel="preload" as="image" href="./image/01_entrance.webp" media="(max-width: 768px)">
+  <link rel="preload" as="image" href="./image/living.webp" media="(min-width: 769px)">
+  <link rel="preload" as="image" href="./image/entrance.webp" media="(max-width: 768px)">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Noto+Sans+JP:wght@200;300;400;500&family=Noto+Serif+JP:wght@200;300;400;500;600&display=swap" rel="stylesheet">
@@ -94,8 +94,6 @@
     <div class="hero__slideshow" id="slideshow">
       <div class="hero__slide hero__slide--a is-active"></div>
       <div class="hero__slide hero__slide--b"></div>
-      <div class="hero__slide hero__slide--c"></div>
-      <div class="hero__slide hero__slide--d"></div>
     </div>
     <div class="hero__content">
       <p class="hero__label sd">Kyoto · Fukuchiyama</p>
@@ -149,7 +147,7 @@
         </div>
       </div>
       <div class="concept__image img-reveal sd sd-delay-2">
-        <img src="./image/09_flower_kitchen.webp" alt="キッチンカウンターに飾られた花" loading="lazy" width="720" height="960">
+        <img src="./image/house-flowers.webp" alt="ペルゴラの花越しに見えるENの建物" loading="lazy" width="720" height="540">
       </div>
     </div>
   </section>
@@ -161,25 +159,16 @@
       <h2 class="section-heading sd sd-delay-1">空間の数々</h2>
     </div>
     <div class="gallery__track" id="galleryTrack">
-      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/01_entrance.webp" data-alt="建物外観・玄関" aria-label="建物外観・玄関を拡大表示"><img src="./image/01_entrance.webp" alt="建物外観・玄関" loading="lazy" width="720" height="960"></button><figcaption class="gallery__caption">#01 — 建物外観・玄関</figcaption></figure>
-      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/06_living_projector.webp" data-alt="リビング・ダイニング" aria-label="リビング・ダイニングを拡大表示"><img src="./image/06_living_projector.webp" alt="リビング・ダイニング" loading="lazy" width="720" height="960"></button><figcaption class="gallery__caption">#02 — リビング・ダイニング</figcaption></figure>
-      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/09_flower_kitchen.webp" data-alt="キッチンカウンターの花" aria-label="キッチンカウンターの花を拡大表示"><img src="./image/09_flower_kitchen.webp" alt="キッチンカウンターの花" loading="lazy" width="720" height="960"></button><figcaption class="gallery__caption">#03 — キッチンカウンターの花</figcaption></figure>
-      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/04_kitchen_island.webp" data-alt="アイランドキッチン" aria-label="アイランドキッチンを拡大表示"><img src="./image/04_kitchen_island.webp" alt="アイランドキッチン" loading="lazy" width="720" height="960"></button><figcaption class="gallery__caption">#04 — アイランドキッチン</figcaption></figure>
-      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/19_large_bedroom.webp" data-alt="広い寝室" aria-label="広い寝室を拡大表示"><img src="./image/19_large_bedroom.webp" alt="広い寝室" loading="lazy" width="720" height="960"></button><figcaption class="gallery__caption">#05 — 広い寝室</figcaption></figure>
-      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/07_bedroom_sunlight.webp" data-alt="日差しのある寝室" aria-label="日差しのある寝室を拡大表示"><img src="./image/07_bedroom_sunlight.webp" alt="日差しのある寝室" loading="lazy" width="720" height="960"></button><figcaption class="gallery__caption">#06 — 日差しのある寝室</figcaption></figure>
-      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/18_bedroom_curtains.webp" data-alt="カーテンのある寝室" aria-label="カーテンのある寝室を拡大表示"><img src="./image/18_bedroom_curtains.webp" alt="カーテンのある寝室" loading="lazy" width="720" height="960"></button><figcaption class="gallery__caption">#07 — カーテンのある寝室</figcaption></figure>
-      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/10_bedroom_warm.webp" data-alt="間接照明のある寝室" aria-label="間接照明のある寝室を拡大表示"><img src="./image/10_bedroom_warm.webp" alt="間接照明のある寝室" loading="lazy" width="720" height="960"></button><figcaption class="gallery__caption">#08 — 間接照明のある寝室</figcaption></figure>
-      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/11_bathroom.webp" data-alt="浴室" aria-label="浴室を拡大表示"><img src="./image/11_bathroom.webp" alt="浴室" loading="lazy" width="720" height="960"></button><figcaption class="gallery__caption">#09 — 浴室</figcaption></figure>
-      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/17_vanity_laundry.webp" data-alt="洗面・ランドリー" aria-label="洗面・ランドリーを拡大表示"><img src="./image/17_vanity_laundry.webp" alt="洗面・ランドリー" loading="lazy" width="720" height="960"></button><figcaption class="gallery__caption">#10 — 洗面・ランドリー</figcaption></figure>
-      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/03_toilet_brick.webp" data-alt="トイレ（レンガ壁）" aria-label="トイレ（レンガ壁）を拡大表示"><img src="./image/03_toilet_brick.webp" alt="トイレ（レンガ壁）" loading="lazy" width="720" height="960"></button><figcaption class="gallery__caption">#11 — トイレ（レンガ壁）</figcaption></figure>
-      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/08_toilet_beige.webp" data-alt="トイレ" aria-label="トイレを拡大表示"><img src="./image/08_toilet_beige.webp" alt="トイレ" loading="lazy" width="720" height="960"></button><figcaption class="gallery__caption">#12 — トイレ</figcaption></figure>
-      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/12_coffee_station.webp" data-alt="コーヒー・食器類" aria-label="コーヒー・食器類を拡大表示"><img src="./image/12_coffee_station.webp" alt="コーヒー・食器類" loading="lazy" width="720" height="960"></button><figcaption class="gallery__caption">#13 — コーヒー・食器類</figcaption></figure>
-      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/14_lounge_chairs.webp" data-alt="ラウンジ" aria-label="ラウンジを拡大表示"><img src="./image/14_lounge_chairs.webp" alt="ラウンジ" loading="lazy" width="720" height="960"></button><figcaption class="gallery__caption">#14 — ラウンジ</figcaption></figure>
-      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/02_garden_bench.webp" data-alt="庭・ベンチ" aria-label="庭・ベンチを拡大表示"><img src="./image/02_garden_bench.webp" alt="庭・ベンチ" loading="lazy" width="720" height="960"></button><figcaption class="gallery__caption">#15 — 庭・ベンチ</figcaption></figure>
-      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/13_rose_garden.webp" data-alt="バラの咲く庭" aria-label="バラの咲く庭を拡大表示"><img src="./image/13_rose_garden.webp" alt="バラの咲く庭" loading="lazy" width="720" height="960"></button><figcaption class="gallery__caption">#16 — バラの咲く庭</figcaption></figure>
-      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/05_cherry_blossoms.webp" data-alt="桜の咲く庭" aria-label="桜の咲く庭を拡大表示"><img src="./image/05_cherry_blossoms.webp" alt="桜の咲く庭" loading="lazy" width="720" height="960"></button><figcaption class="gallery__caption">#17 — 桜の咲く庭</figcaption></figure>
-      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/16_house_flowers.webp" data-alt="建物と花" aria-label="建物と花を拡大表示"><img src="./image/16_house_flowers.webp" alt="建物と花" loading="lazy" width="720" height="960"></button><figcaption class="gallery__caption">#18 — 建物と花</figcaption></figure>
-      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/15_garden_closeup.webp" data-alt="庭の植物" aria-label="庭の植物を拡大表示"><img src="./image/15_garden_closeup.webp" alt="庭の植物" loading="lazy" width="720" height="960"></button><figcaption class="gallery__caption">#19 — 庭の植物</figcaption></figure>
+      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/entrance.webp" data-alt="建物外観・玄関" aria-label="建物外観・玄関を拡大表示"><img src="./image/entrance.webp" alt="建物外観・玄関" loading="lazy" width="941" height="1672"></button><figcaption class="gallery__caption">#01 — 建物外観・玄関</figcaption></figure>
+      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/living.webp" data-alt="リビング・ダイニング" aria-label="リビング・ダイニングを拡大表示"><img src="./image/living.webp" alt="リビング・ダイニング" loading="lazy" width="1440" height="1080"></button><figcaption class="gallery__caption">#02 — リビング・ダイニング</figcaption></figure>
+      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/lounge.webp" data-alt="ラウンジ" aria-label="ラウンジを拡大表示"><img src="./image/lounge.webp" alt="ラウンジ" loading="lazy" width="1440" height="1080"></button><figcaption class="gallery__caption">#03 — ラウンジ</figcaption></figure>
+      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/kitchen.webp" data-alt="キッチン" aria-label="キッチンを拡大表示"><img src="./image/kitchen.webp" alt="キッチン" loading="lazy" width="1440" height="1080"></button><figcaption class="gallery__caption">#04 — キッチン</figcaption></figure>
+      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/bedroom-wide.webp" data-alt="広い寝室" aria-label="広い寝室を拡大表示"><img src="./image/bedroom-wide.webp" alt="広い寝室" loading="lazy" width="1086" height="1448"></button><figcaption class="gallery__caption">#05 — 広い寝室</figcaption></figure>
+      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/bedroom-warm.webp" data-alt="和みの寝室" aria-label="和みの寝室を拡大表示"><img src="./image/bedroom-warm.webp" alt="和みの寝室" loading="lazy" width="1086" height="1448"></button><figcaption class="gallery__caption">#06 — 和みの寝室</figcaption></figure>
+      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/bathroom.webp" data-alt="浴室" aria-label="浴室を拡大表示"><img src="./image/bathroom.webp" alt="浴室" loading="lazy" width="1440" height="1080"></button><figcaption class="gallery__caption">#07 — 浴室</figcaption></figure>
+      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/vanity.webp" data-alt="洗面" aria-label="洗面を拡大表示"><img src="./image/vanity.webp" alt="洗面" loading="lazy" width="1440" height="1080"></button><figcaption class="gallery__caption">#08 — 洗面</figcaption></figure>
+      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/toilet.webp" data-alt="トイレ（レンガ壁）" aria-label="トイレ（レンガ壁）を拡大表示"><img src="./image/toilet.webp" alt="トイレ（レンガ壁）" loading="lazy" width="1440" height="1080"></button><figcaption class="gallery__caption">#09 — トイレ（レンガ壁）</figcaption></figure>
+      <figure class="gallery__item"><button type="button" class="gallery__zoom" data-src="./image/garden.webp" data-alt="庭" aria-label="庭を拡大表示"><img src="./image/garden.webp" alt="庭" loading="lazy" width="2000" height="2666"></button><figcaption class="gallery__caption">#10 — 庭</figcaption></figure>
     </div>
     <div class="gallery__nav">
       <button class="gallery__arrow gallery__arrow--prev" id="galleryPrev" aria-label="前へ">‹</button>
@@ -192,7 +181,7 @@
   <section class="rooms" id="rooms">
     <div class="room-block">
       <div class="room-block__image sd img-reveal">
-        <img src="./image/06_living_projector.webp" alt="プロジェクターのある広々としたリビング・ダイニング" loading="lazy" width="720" height="540">
+        <img src="./image/living.webp" alt="プロジェクターのある広々としたリビング・ダイニング" loading="lazy" width="720" height="540">
       </div>
       <div class="room-block__text sd">
         <span class="section-label">Room 01</span>
@@ -201,8 +190,8 @@
       </div>
     </div>
     <div class="room-block room-block--reverse">
-      <div class="room-block__image sd img-reveal">
-        <img src="./image/19_large_bedroom.webp" alt="布団を敷いた広い寝室" loading="lazy" width="720" height="960">
+      <div class="room-block__image room-block__image--tall sd img-reveal">
+        <img src="./image/bedroom-wide.webp" alt="布団を敷いた明るい寝室" loading="lazy" width="720" height="960">
       </div>
       <div class="room-block__text sd">
         <span class="section-label">Room 02</span>
@@ -212,7 +201,7 @@
     </div>
     <div class="room-block">
       <div class="room-block__image sd img-reveal">
-        <img src="./image/04_kitchen_island.webp" alt="アイランドキッチン" loading="lazy" width="720" height="540">
+        <img src="./image/kitchen.webp" alt="冷蔵庫とコンロのあるキッチン" loading="lazy" width="720" height="540">
       </div>
       <div class="room-block__text sd">
         <span class="section-label">Room 03</span>
@@ -222,7 +211,7 @@
     </div>
     <div class="room-block room-block--reverse">
       <div class="room-block__image sd img-reveal">
-        <img src="./image/11_bathroom.webp" alt="浴槽のある浴室" loading="lazy" width="720" height="540">
+        <img src="./image/bathroom.webp" alt="浴槽とシャワーの浴室" loading="lazy" width="720" height="540">
       </div>
       <div class="room-block__text sd">
         <span class="section-label">Room 04</span>
@@ -231,8 +220,8 @@
       </div>
     </div>
     <div class="room-block">
-      <div class="room-block__image sd img-reveal">
-        <img src="./image/02_garden_bench.webp" alt="ベンチと鉢植えのある庭" loading="lazy" width="720" height="960">
+      <div class="room-block__image room-block__image--tall sd img-reveal">
+        <img src="./image/garden.webp" alt="ベンチと花々のある庭" loading="lazy" width="720" height="960">
       </div>
       <div class="room-block__text sd">
         <span class="section-label">Room 05</span>

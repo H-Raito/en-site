@@ -18,6 +18,16 @@ document.addEventListener('DOMContentLoaded', () => {
   sdElements.forEach((el) => sdObserver.observe(el));
 
 
+  /* ---------- Gallery images fade-in on load ---------- */
+  document.querySelectorAll('.gallery__zoom img').forEach((img) => {
+    if (img.complete && img.naturalWidth > 0) {
+      img.classList.add('loaded');
+    } else {
+      img.addEventListener('load', function () { this.classList.add('loaded'); });
+    }
+  });
+
+
   /* ---------- Hero Parallax ---------- */
   const heroSlideshow = document.querySelector('.hero__slideshow');
   if (heroSlideshow) {
@@ -115,31 +125,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const items = track.querySelectorAll('.gallery__item');
     const totalItems = items.length;
 
-    function getScrollAmount() {
-      const first = track.querySelector('.gallery__item');
-      if (!first) return 300;
-      return first.offsetWidth + 16;
+    /* 可変幅アイテムに対応したインデックスベースのナビゲーション */
+    const padLeft = () => (parseFloat(getComputedStyle(track).paddingLeft) || 0);
+    let gi = 0;
+    function goTo(i) {
+      gi = Math.max(0, Math.min(i, totalItems - 1));
+      track.scrollTo({ left: items[gi].offsetLeft - padLeft(), behavior: 'smooth' });
+    }
+    function syncFromScroll() {
+      let best = 0;
+      for (let i = 0; i < totalItems; i++) {
+        if (items[i].offsetLeft - padLeft() <= track.scrollLeft + 10) best = i;
+      }
+      gi = best;
+      counter.textContent = String(best + 1).padStart(2, '0') + ' / ' + String(totalItems).padStart(2, '0');
     }
 
-    function updateCounter() {
-      const scrollPos = track.scrollLeft;
-      const itemW = getScrollAmount();
-      const visibleCount = Math.round(track.offsetWidth / itemW);
-      const idx = Math.min(Math.round(scrollPos / itemW) + visibleCount, totalItems);
-      counter.textContent = String(Math.max(idx, 1)).padStart(2, '0') + ' / ' + String(totalItems).padStart(2, '0');
-    }
+    prevBtn.addEventListener('click', () => goTo(gi - 1));
+    nextBtn.addEventListener('click', () => goTo(gi + 1));
 
-    prevBtn.addEventListener('click', () => {
-      track.scrollBy({ left: -getScrollAmount(), behavior: 'smooth' });
-    });
-
-    nextBtn.addEventListener('click', () => {
-      track.scrollBy({ left: getScrollAmount(), behavior: 'smooth' });
-    });
-
-    track.addEventListener('scroll', updateCounter, { passive: true });
-    window.addEventListener('resize', updateCounter, { passive: true });
-    updateCounter();
+    track.addEventListener('scroll', () => { requestAnimationFrame(syncFromScroll); }, { passive: true });
+    window.addEventListener('resize', () => { requestAnimationFrame(syncFromScroll); }, { passive: true });
+    syncFromScroll();
 
 
     /* ---------- Lightbox ---------- */
