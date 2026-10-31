@@ -129,7 +129,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .gallery__header { text-align: center; margin-bottom: 48px; }
 .gallery__header .section-label { color: rgba(255,255,255,0.55); }
 .gallery__header .section-heading { color: #fff; }
-.gallery__track { position: relative; display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: 0 60px; }
+.gallery__track { position: relative; display: flex; gap: 16px; overflow-x: auto; scroll-padding-left: 60px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: 0 60px; }
 .gallery__track::-webkit-scrollbar { display: none; }
 .gallery__item { flex: 0 0 auto; scroll-snap-align: start; position: relative; border-radius: 0; min-width: 0; }
 /* 画像は自然比率で表示（gallery__zoom img ルールに統一） */
@@ -445,7 +445,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   .concept { padding: 80px 0; }
   .concept__inner { padding: 0 24px; }
   .concept__features { flex-wrap: wrap; gap: 20px; }
-  .gallery__track { padding: 0 24px; }
+  .gallery__track { padding: 0 24px; scroll-padding-left: 24px; }
   /* SP幅は画像の自然サイズに追従 */
   .rooms { padding: 80px 0; }
   .room-block { grid-template-columns: 1fr; gap: 24px; padding: 0 24px; margin-bottom: 48px; }

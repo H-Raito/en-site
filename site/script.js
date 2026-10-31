@@ -146,7 +146,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     track.addEventListener('scroll', () => { requestAnimationFrame(syncFromScroll); }, { passive: true });
     window.addEventListener('resize', () => { requestAnimationFrame(syncFromScroll); }, { passive: true });
-    syncFromScroll();
+
+    function resetGallery() {
+      track.scrollLeft = 0;
+      gi = 0;
+      counter.textContent = '01 / ' + String(totalItems).padStart(2, '0');
+    }
+    resetGallery();
+
+    /* bfcache復帰・スクロール復元でも #01 から始める */
+    window.addEventListener('pageshow', (e) => {
+      if (e.persisted) resetGallery();
+    });
 
 
     /* ---------- Lightbox ---------- */
