@@ -1,6 +1,6 @@
 # EN サイト 写真ガイド（2026-10-31 更新）
 
-サイトの全写真は **`/Users/raito/Downloads/EN_Photo`（実写20枚）由来**です。
+サイトの全写真は、提供を受けた実写フォルダ「EN_Photo」（実写20枚）由来です。
 `site/image/` に用途別のsemantic名でWebP変換して配置しています。
 
 ## ファイル対応表（site/image/）
