@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "stripe": "^22.3.2"
+    "stripe": "^22.3.2",
+    "@neondatabase/serverless": "^1.0.0"
   }
 }
