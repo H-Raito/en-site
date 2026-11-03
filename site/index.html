@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#2C2520">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <title>EN — 京都・福知山の一棟貸しの宿（最大16名）</title>
-  <meta name="description" content="京都府福知山市観音寺の一棟貸しの宿「EN」。最大16名。プロジェクター付きの広々としたリビング・ダイニングと、四季の花が咲く庭。家族や友人との滞在に。ご予約はAirbnbから。">
+  <meta name="description" content="京都府福知山市観音寺の一棟貸しの宿「EN」。最大16名。プロジェクター付きの広々としたリビング・ダイニングと、四季の花が咲く庭。家族や友人との滞在に。公式サイトから直接ご予約いただけます。">
   <meta property="og:title" content="EN — 京都・福知山の一棟貸しの宿">
   <meta property="og:description" content="一棟貸し・最大16名。プロジェクター付きの広々リビングと四季の庭。京都の奥にある、集まるための宿。">
   <meta property="og:type" content="website">
@@ -191,7 +191,7 @@
       </div>
     </div>
     <div class="room-block room-block--reverse">
-      <div class="room-block__image room-block__image--tall sd img-reveal">
+      <div class="room-block__image sd img-reveal">
         <img src="./image/bedroom-wide.webp" alt="布団を敷いた明るい寝室" loading="lazy" width="720" height="960">
       </div>
       <div class="room-block__text sd">
@@ -221,7 +221,7 @@
       </div>
     </div>
     <div class="room-block">
-      <div class="room-block__image room-block__image--tall sd img-reveal">
+      <div class="room-block__image sd img-reveal">
         <img src="./image/garden.webp" alt="ベンチと花々のある庭" loading="lazy" width="720" height="960">
       </div>
       <div class="room-block__text sd">
@@ -432,55 +432,146 @@
         <div class="quick-info__item"><span class="quick-info__label">Check-in</span><span class="quick-info__value">15:00〜22:00</span></div>
         <div class="quick-info__item"><span class="quick-info__label">Check-out</span><span class="quick-info__value">〜 12:00</span></div>
         <div class="quick-info__item"><span class="quick-info__label">Capacity</span><span class="quick-info__value">最大16名（一棟貸し）</span></div>
-        <div class="quick-info__item"><span class="quick-info__label">Reserve</span><span class="quick-info__value">Airbnbから承っています</span></div>
+        <div class="quick-info__item"><span class="quick-info__label">Payment</span><span class="quick-info__value">オンラインカード決済</span></div>
       </div>
 
       <div class="booking-layout sd sd-delay-3">
         <div class="booking-layout__main">
-          <div class="reserve-lead">
-            <h3 class="reserve-lead__title">空室状況・ご予約はAirbnbから</h3>
-            <p class="reserve-lead__text">空室カレンダー、宿泊料金、キャンセル条件のご確認からお支払いまで、Airbnbの予約ページで承っています。</p>
-            <a class="btn-booking reserve-cta" href="https://www.airbnb.jp/rooms/1735176902365332305" target="_blank" rel="noopener">Airbnbの予約ページへ</a>
-            <p class="reserve-lead__note">お電話でのお問い合わせ: <a href="tel:+81773216424">0773-21-6424</a></p>
+          <div class="booking-progress">
+            <div class="booking-progress__step is-active" data-step="1">日付選択</div>
+            <div class="booking-progress__step" data-step="2">お客様情報</div>
+            <div class="booking-progress__step" data-step="3">確認</div>
+            <div class="booking-progress__step" data-step="4">完了</div>
           </div>
-          <div class="included-box">
-            <h4 class="included-box__title">ご用意しているもの</h4>
-            <div class="included-box__grid">
-              <div class="included-box__item"><span class="included-box__check">✓</span><div><span class="included-box__name">一棟貸し（1組限定）</span><span class="included-box__desc">建物と庭をまるごとご利用いただけます</span></div></div>
-              <div class="included-box__item"><span class="included-box__check">✓</span><div><span class="included-box__name">Wi-Fi・プロジェクター</span><span class="included-box__desc">広々としたリビング・ダイニングで</span></div></div>
-              <div class="included-box__item"><span class="included-box__check">✓</span><div><span class="included-box__name">キッチン（簡単な調理可）</span><span class="included-box__desc">調味料・食材はご持参ください</span></div></div>
-              <div class="included-box__item"><span class="included-box__check">✓</span><div><span class="included-box__name">バスタオル・フェイスタオル・歯ブラシ</span><span class="included-box__desc">宿泊人数分をご用意します</span></div></div>
-              <div class="included-box__item"><span class="included-box__check">✓</span><div><span class="included-box__name">駐車場（無料・3台）</span><span class="included-box__desc">敷地内にございます</span></div></div>
-              <div class="included-box__item"><span class="included-box__check">✓</span><div><span class="included-box__name">お庭</span><span class="included-box__desc">季節の花々と庭でのひとときを</span></div></div>
+
+          <!-- Step 1 -->
+          <div class="booking-step is-active" id="step1">
+            <div class="cal-nav">
+              <button type="button" id="calPrev" class="cal-nav__btn" aria-label="前月">‹</button>
+              <span id="calMonth" class="cal-nav__month"></span>
+              <button type="button" id="calNext" class="cal-nav__btn" aria-label="翌月">›</button>
+            </div>
+            <div class="cal-grid" id="calGrid"></div>
+            <p class="cal-legend"><span class="cal-legend__item"><span class="cal-legend__dot cal-legend__dot--full"></span>予約済み・受付停止</span><span class="cal-legend__item"><span class="cal-legend__dot cal-legend__dot--today"></span>本日</span></p>
+            <div class="date-display">
+              <div class="date-display__item"><span class="date-display__label">Check in</span><span id="dispCheckin" class="date-display__value">選択してください</span></div>
+              <span class="date-display__arrow">→</span>
+              <div class="date-display__item"><span class="date-display__label">Check out</span><span id="dispCheckout" class="date-display__value">選択してください</span></div>
+              <span id="dispNights" class="date-display__nights"></span>
+            </div>
+            <div class="guest-select">
+              <div class="guest-select__item"><label for="adults">大人（小学生以上）</label><select id="adults"></select></div>
+              <div class="guest-select__item"><label for="children">乳幼児（2歳以下・無料）</label><select id="children"></select></div>
+            </div>
+            <p class="booking-notice" id="capacityNote">エアコンを備えた4部屋のみのご利用の場合、宿泊可能人数は13名までです。14名以上でご利用の場合は、空調のないお部屋の使用について事前にご相談ください。</p>
+            <div class="included-box">
+              <h4 class="included-box__title">料金に含まれるもの</h4>
+              <div class="included-box__grid">
+                <div class="included-box__item"><span class="included-box__check">✓</span><div><span class="included-box__name">一棟貸し（1組限定）</span><span class="included-box__desc">建物と庭をまるごとご利用いただけます</span></div></div>
+                <div class="included-box__item"><span class="included-box__check">✓</span><div><span class="included-box__name">Wi-Fi・プロジェクター</span><span class="included-box__desc">広々としたリビング・ダイニングで</span></div></div>
+                <div class="included-box__item"><span class="included-box__check">✓</span><div><span class="included-box__name">キッチン（簡単な調理可）</span><span class="included-box__desc">調味料・食材はご持参ください</span></div></div>
+                <div class="included-box__item"><span class="included-box__check">✓</span><div><span class="included-box__name">バスタオル・フェイスタオル・歯ブラシ</span><span class="included-box__desc">宿泊人数分をご用意します</span></div></div>
+                <div class="included-box__item"><span class="included-box__check">✓</span><div><span class="included-box__name">駐車場（無料・3台）</span><span class="included-box__desc">敷地内にございます</span></div></div>
+                <div class="included-box__item"><span class="included-box__check">✓</span><div><span class="included-box__name">お庭</span><span class="included-box__desc">季節の花々と庭でのひとときを</span></div></div>
+              </div>
+            </div>
+            <div class="options-box">
+              <h4 class="options-box__title">オプション（ご希望の受付・当日現金払い）</h4>
+              <div class="options-box__chips">
+                <label class="opt-chip">
+                  <input type="checkbox" id="optBbq">
+                  <span class="opt-chip__icon" aria-hidden="true"></span>
+                  <span class="opt-chip__name">BBQセット</span>
+                  <span class="opt-chip__price">¥2,000</span>
+                </label>
+                <label class="opt-chip">
+                  <input type="checkbox" id="optSauna">
+                  <span class="opt-chip__icon" aria-hidden="true"></span>
+                  <span class="opt-chip__name">テントサウナ</span>
+                  <span class="opt-chip__price">¥2,000</span>
+                </label>
+                <label class="opt-chip">
+                  <input type="checkbox" id="optEarly">
+                  <span class="opt-chip__icon" aria-hidden="true"></span>
+                  <span class="opt-chip__name">アーリーチェックイン（12:00〜）</span>
+                  <span class="opt-chip__price">¥5,000</span>
+                </label>
+              </div>
+              <p class="options-box__note">※オプション料金は決済に含まれません。当日、現金にてお支払いいただきます（要事前連絡）。</p>
+            </div>
+            <span class="field-error" id="step1Error" hidden></span>
+            <button type="button" id="toStep2" class="btn-booking">日付を選択して次へ</button>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="booking-step" id="step2">
+            <div class="form-grid">
+              <div class="form-field"><label for="lastName">姓 <span class="req">*</span></label><input type="text" id="lastName" autocomplete="family-name"></div>
+              <div class="form-field"><label for="firstName">名 <span class="req">*</span></label><input type="text" id="firstName" autocomplete="given-name"></div>
+              <div class="form-field"><label for="lastNameKana">セイ <span class="req">*</span></label><input type="text" id="lastNameKana"></div>
+              <div class="form-field"><label for="firstNameKana">メイ <span class="req">*</span></label><input type="text" id="firstNameKana"></div>
+              <div class="form-field"><label for="email">メール <span class="req">*</span></label><input type="email" id="email" autocomplete="email"></div>
+              <div class="form-field"><label for="phone">電話番号 <span class="req">*</span></label><input type="tel" id="phone" autocomplete="tel"></div>
+              <div class="form-field"><label for="zip">郵便番号 <span class="req">*</span></label><input type="text" id="zip" inputmode="numeric" autocomplete="postal-code"></div>
+              <div class="form-field"><label for="prefecture">都道府県 <span class="req">*</span></label><input type="text" id="prefecture"></div>
+              <div class="form-field form-field--full"><label for="address">市区町村・番地 <span class="req">*</span></label><input type="text" id="address" autocomplete="street-address"></div>
+              <div class="form-field"><label for="arrival">到着予定時刻</label><select id="arrival"><option value="15:00">15:00</option><option value="16:00">16:00</option><option value="17:00" selected>17:00</option><option value="18:00">18:00</option><option value="19:00">19:00</option><option value="20:00">20:00</option><option value="21:00">21:00</option><option value="22:00">22:00</option></select></div>
+              <div class="form-field form-field--full"><label for="notes">要望・連絡事項</label><textarea id="notes" rows="3" maxlength="500"></textarea></div>
+            </div>
+            <span class="field-error" id="step2Error" hidden></span>
+            <div class="booking-actions">
+              <button type="button" id="backToStep1" class="btn-booking btn-booking--ghost">戻る</button>
+              <button type="button" id="toStep3" class="btn-booking">確認画面へ</button>
             </div>
           </div>
-          <div class="options-box">
-            <h4 class="options-box__title">有料オプション（当日現金払い・事前連絡制）</h4>
-            <div class="options-box__chips">
-              <span class="opt-chip opt-chip--static"><span class="opt-chip__name">BBQセット</span><span class="opt-chip__price">¥2,000</span></span>
-              <span class="opt-chip opt-chip--static"><span class="opt-chip__name">テントサウナ</span><span class="opt-chip__price">¥2,000</span></span>
-              <span class="opt-chip opt-chip--static"><span class="opt-chip__name">アーリーチェックイン（12:00〜）</span><span class="opt-chip__price">¥5,000</span></span>
+
+          <!-- Step 3 -->
+          <div class="booking-step" id="step3">
+            <div id="confirmBox" class="confirm-box"></div>
+            <div class="cancel-policy">
+              <p class="cancel-policy__title">キャンセルポリシー</p>
+              <p class="cancel-policy__text" id="cancelPolicyText">キャンセルポリシーは現在確定中です。確定までの間、キャンセルのご希望はお電話（<a href="tel:+81773216424">0773-21-6424</a>）にてご相談ください。</p>
+            </div>
+            <label class="booking-terms">
+              <input type="checkbox" id="agreeTerms">
+              <span><a href="#" class="js-terms-link">利用規約</a>および<a href="#" class="js-terms-link">キャンセルポリシー</a>に同意する</span>
+            </label>
+            <span class="field-error" id="step3Error" hidden></span>
+            <div class="booking-actions">
+              <button type="button" id="backToStep2" class="btn-booking btn-booking--ghost">戻る</button>
+              <button type="button" id="submitBooking" class="btn-booking">決済ページへ進む</button>
+            </div>
           </div>
-          </div>
-          <div class="reserve-notice">
-            <p>エアコンを備えた4部屋のみのご利用の場合、宿泊可能人数は13名までです。14名以上でのご利用をご希望の場合は、空調のないお部屋の使用条件を事前にご確認ください。</p>
-            <p>BBQセット・テントサウナのご利用には事前連絡が必要です。食材・飲み物・調味料はご持参ください。宿泊約款の要点は<a href="#" class="js-terms-link">こちら</a>。</p>
+
+          <!-- Step 4 -->
+          <div class="booking-step" id="step4">
+            <div class="booking-complete">
+              <h3 id="completeTitle">ご予約ありがとうございます</h3>
+              <p id="completeStatus">予約状況を確認しています…</p>
+              <div id="completeSummary" class="confirm-box"></div>
+              <p class="booking-complete__note">ご不明な点がございましたら、お気軽にご連絡ください。<br>TEL: <a href="tel:+81773216424">0773-21-6424</a></p>
+              <a href="#" class="btn-booking booking-complete__top" id="backToTop">トップに戻る</a>
+            </div>
           </div>
         </div>
 
         <aside class="booking-layout__side">
           <div class="summary-card">
-            <h4 class="summary-card__title">ご予約の流れ</h4>
-            <ol class="flow-card__list">
-              <li>Airbnbで空室状況と料金を確認</li>
-              <li>Airbnb上でご予約・お支払い</li>
-              <li>当日、オプションは現地で現金精算</li>
-            </ol>
+            <h4 class="summary-card__title">ご予約内容</h4>
+            <div class="summary-card__row"><span>チェックイン</span><span id="sumCheckin">-</span></div>
+            <div class="summary-card__row"><span>チェックアウト</span><span id="sumCheckout">-</span></div>
+            <div class="summary-card__row"><span>宿泊数</span><span id="sumNights">-</span></div>
+            <div class="summary-card__row"><span>宿泊人数</span><span id="sumGuests">大人2名 / 乳幼児0名</span></div>
             <div class="summary-card__divider"></div>
-            <p class="flow-card__note">ご不明な点はお電話（<a href="tel:+81773216424">0773-21-6424</a>）またはAirbnbメッセージにてお気軽にどうぞ。</p>
+            <div class="summary-card__row"><span>宿泊料</span><span id="sumSubtotal">-</span></div>
+            <div class="summary-card__row"><span>1泊あたり</span><span id="sumPerNight">-</span></div>
+            <div class="summary-card__row"><span>オプション</span><span id="sumOptions">当日現金払い</span></div>
+            <div class="summary-card__total"><span>合計（税込）</span><span id="sumTotal">¥-</span></div>
+            <p class="summary-card__note">決済はStripe（クレジットカード）で承ります。</p>
           </div>
         </aside>
       </div>
+
 
       <!-- FAQ -->
       <div class="faq sd" id="faq">
@@ -498,7 +589,7 @@
           <details class="faq__item"><summary>喫煙はできますか？</summary><p>館内は全面禁煙です。喫煙される場合は、お庭の指定喫煙スペースをご利用ください。</p></details>
           <details class="faq__item"><summary>大人数で宿泊する際の注意点はありますか？</summary><p>エアコンを備えた4部屋のみを利用する場合、宿泊可能人数は13名までです。14名以上でのご利用をご希望の場合は、空調のないお部屋の使用条件を事前にご確認ください。</p></details>
           <details class="faq__item"><summary>ペットは連れて行けますか？</summary><p>ペット同伴の可否については、事前にお問い合わせください。</p></details>
-          <details class="faq__item"><summary>キャンセル規定はどうなっていますか？</summary><p>Airbnbでご予約の場合は、予約画面に表示されるキャンセル条件をご確認ください。</p></details>
+          <details class="faq__item"><summary>キャンセル規定はどうなっていますか？</summary><p>キャンセルポリシーは現在確定中です。ご予約確定時に表示される規定をご確認いただくか、お電話（0773-21-6424）にてお問い合わせください。</p></details>
         </div>
       </div>
     </div>
@@ -533,7 +624,7 @@
       <h3 class="terms-dialog__title">宿泊約款（要点）</h3>
       <h4>ご予約・お支払い</h4>
       <ul>
-        <li>空室状況のご確認・ご予約・お支払いは、Airbnbの予約ページから承ります。</li>
+        <li>空室状況のご確認・ご予約・お支払いは、当サイトの予約フォームから承ります（クレジットカード決済）。</li>
         <li>チェックイン 15:00〜22:00 / チェックアウト 12:00。</li>
         <li>最大16名（一棟貸し）。エアコンのある4部屋のみのご利用の場合は13名までです。</li>
         <li>2歳以下は宿泊無料（寝具・アメニティなし）。</li>
@@ -553,8 +644,7 @@
       </ul>
       <h4>キャンセル</h4>
       <ul>
-        <li>Airbnbでご予約の場合は、予約画面に表示されるキャンセル条件をご確認ください。</li>
-        <li>直接予約のご希望は、お電話にてお問い合わせください。</li>
+        <li>キャンセルポリシーは現在確定中です。確定までの間、キャンセルのご希望はお電話にてご相談ください。</li>
       </ul>
       <h4>お問い合わせ</h4>
       <p>TEL: <a href="tel:+81773216424">0773-21-6424</a></p>

@@ -2,7 +2,10 @@
    EN — Interactions
    ======================================== */
 
+import { initBooking } from './js/booking.js';
+
 document.addEventListener('DOMContentLoaded', () => {
+  initBooking();
 
   /* ---------- Scroll Appear (.sd system) ---------- */
   const sdElements = document.querySelectorAll('.sd');

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>EN 予約管理</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: "Noto Sans JP", sans-serif; background: #F5F2ED; color: #2C2824; font-size: 14px; }
+    header { background: #2C2520; color: #fff; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { font-size: 16px; font-weight: 500; letter-spacing: 0.08em; }
+    header .logout { color: rgba(255,255,255,0.7); font-size: 12px; cursor: pointer; background: none; border: 1px solid rgba(255,255,255,0.3); padding: 6px 12px; }
+    main { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .tabs button { padding: 9px 18px; border: 1px solid #DDD5CA; background: #fff; cursor: pointer; font-size: 13px; letter-spacing: 0.05em; }
+    .tabs button.on { background: #2C2520; color: #fff; border-color: #2C2520; }
+    .card { background: #fff; border: 1px solid #E4DCD2; padding: 20px; margin-bottom: 20px; }
+    .card h2 { font-size: 14px; font-weight: 500; margin-bottom: 14px; letter-spacing: 0.08em; color: #6B5E52; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { border-bottom: 1px solid #EDE7DE; padding: 9px 8px; text-align: left; white-space: nowrap; }
+    th { color: #9B8E82; font-weight: 400; font-size: 11px; letter-spacing: 0.08em; }
+    td.wrap { white-space: normal; min-width: 160px; }
+    .status { display: inline-block; padding: 2px 10px; font-size: 11px; letter-spacing: 0.05em; }
+    .s-confirmed { background: #E8EFE3; color: #4A6741; }
+    .s-pending_payment { background: #FBF3E1; color: #8A6D3B; }
+    .s-expired, .s-cancelled, .s-payment_failed { background: #F3E7E7; color: #9C5A5A; }
+    .s-refunded { background: #EAEAF3; color: #5A5A8A; }
+    .s-manual { background: #E3EDF3; color: #41627A; }
+    button.act { font-size: 12px; padding: 5px 10px; border: 1px solid #CCC2B5; background: #fff; cursor: pointer; margin-right: 4px; }
+    button.act:hover { background: #F5F0E8; }
+    input, select, textarea { border: 1px solid #CCC2B5; padding: 8px; font-size: 13px; font-family: inherit; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; margin-bottom: 12px; }
+    .row label { display: block; font-size: 11px; color: #9B8E82; margin-bottom: 4px; letter-spacing: 0.06em; }
+    .msg { font-size: 12px; margin-top: 8px; }
+    .msg.err { color: #9C5A5A; }
+    .msg.ok { color: #4A6741; }
+    .grid2 { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .calcell { border: 1px solid #E4DCD2; min-height: 64px; font-size: 11px; padding: 4px; }
+    .calcell .d { color: #9B8E82; }
+    .calcell.booked { background: #F0E4D8; }
+    .calcell.blocked { background: #E8E2D8; background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(139,115,85,0.12) 4px, rgba(139,115,85,0.12) 8px); }
+    .calcell.past { opacity: 0.45; }
+    #loginView { max-width: 380px; margin: 80px auto; }
+    #loginView .card { padding: 32px; }
+    .muted { color: #9B8E82; font-size: 12px; }
+    .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+    textarea { width: 100%; }
+  </style>
+</head>
+<body>
+  <div id="loginView">
+    <div class="card">
+      <h2>EN 予約管理 ログイン</h2>
+      <div class="row"><div style="flex:1"><label>管理キー（ADMIN_KEY）</label><input type="password" id="key" style="width:100%"></div></div>
+      <button class="act" id="loginBtn">ログイン</button>
+      <p class="msg" id="loginMsg"></p>
+    </div>
+  </div>
+
+  <div id="appView" hidden>
+    <header>
+      <h1>EN 予約管理</h1>
+      <button class="logout" id="logoutBtn">ログアウト</button>
+    </header>
+    <main>
+      <div class="tabs">
+        <button data-tab="bookings" class="on">予約一覧</button>
+        <button data-tab="calendar">カレンダー</button>
+        <button data-tab="blocked">受付停止</button>
+        <button data-tab="manual">手動予約</button>
+        <button data-tab="settings">設定</button>
+      </div>
+
+      <div id="tab-bookings">
+        <div class="card">
+          <div class="toolbar">
+            <select id="filterStatus"><option value="">すべて</option><option value="confirmed">confirmed</option><option value="pending_payment">pending</option><option value="expired">expired</option><option value="cancelled">cancelled</option><option value="refunded">refunded</option></select>
+            <input id="searchQ" placeholder="名前・メール・電話・予約番号で検索" style="width:280px">
+            <button class="act" id="searchBtn">検索</button>
+          </div>
+          <table>
+            <thead><tr><th>予約番号</th><th>状態</th><th>チェックイン</th><th> checkout</th><th>泊</th><th>人数</th><th>お名前</th><th>メール / TEL</th><th>金額</th><th>メール</th><th>操作</th></tr></thead>
+            <tbody id="bookingRows"></tbody>
+          </table>
+          <p class="muted" id="bookingCount"></p>
+        </div>
+      </div>
+
+      <div id="tab-calendar" hidden>
+        <div class="card">
+          <div class="toolbar">
+            <button class="act" id="calPrevY">前年</button>
+            <strong id="calYear"></strong>
+            <button class="act" id="calNextY">翌年</button>
+            <span class="muted">濃い背景=宿泊（予約）／斜線=受付停止</span>
+          </div>
+          <div id="yearCal"></div>
+  </div>
+      </div>
+
+      <div id="tab-blocked" hidden>
+        <div class="card">
+          <h2>受付停止日の登録・解除</h2>
+          <div class="row">
+            <div><label>開始日</label><input type="date" id="blFrom"></div>
+            <div><label>終了日</label><input type="date" id="blTo"></div>
+            <div><label>理由（任意）</label><input id="blReason" placeholder="清掃・メンテナンス等"></div>
+            <button class="act" id="blAdd">停止を登録</button>
+            <button class="act" id="blRemove">解除</button>
+          </div>
+          <p class="msg" id="blMsg"></p>
+          <table><thead><tr><th>日付</th><th>理由</th><th>操作</th></tr></thead><tbody id="blockedRows"></tbody></table>
+        </div>
+      </div>
+
+      <div id="tab-manual" hidden>
+        <div class="card">
+          <h2>手動予約登録（電話・メール予約。決済なし・現地精算）</h2>
+          <div class="row">
+            <div><label>チェックイン</label><input type="date" id="mIn"></div>
+            <div><label>チェックアウト</label><input type="date" id="mOut"></div>
+            <div><label>大人</label><input type="number" id="mAdults" value="2" min="1" max="16" style="width:70px"></div>
+            <div><label>乳幼児</label><input type="number" id="mChildren" value="0" min="0" max="5" style="width:70px"></div>
+          </div>
+          <div class="row">
+            <div><label>お名前</label><input id="mName"></div>
+            <div><label>メール</label><input id="mEmail" style="width:220px"></div>
+            <div><label>電話</label><input id="mPhone"></div>
+          </div>
+          <div class="row">
+            <div><label>備考</label><input id="mNotes" style="width:360px"></div>
+            <button class="act" id="mAdd">登録する</button>
+          </div>
+          <p class="msg" id="mMsg"></p>
+        </div>
+      </div>
+
+      <div id="tab-settings" hidden>
+        <div class="card">
+          <h2>キャンセルポリシー文（予約確認画面に表示）</h2>
+          <textarea id="cancelText" rows="4" placeholder="正式なキャンセルポリシーを確定後、ここに入力すると予約確認画面に表示されます"></textarea>
+          <button class="act" id="saveCancel">保存する</button>
+          <p class="msg" id="setMsg"></p>
+        </div>
+        <div class="card">
+          <h2>運用ログ</h2>
+          <table><thead><tr><th>日時</th><th>操作</th><th>詳細</th></tr></thead><tbody id="logRows"></tbody></table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let authed = false;
+
+    async function api(action, params, body) {
+      const qs = new URLSearchParams({ action, ...(params || {}) });
+      const opt = body ? {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      } : {};
+      const r = await fetch('/api/admin.js?' + qs.toString(), opt);
+      if (r.status === 401) { showLogin(); throw new Error('unauthorized'); }
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'error');
+      return d;
+    }
+
+    function showLogin() { authed = false; $('loginView').hidden = false; $('appView').hidden = true; }
+    function showApp() { authed = true; $('loginView').hidden = true; $('appView').hidden = false; loadBookings(); }
+
+    $('loginBtn').addEventListener('click', async () => {
+      try {
+        const r = await fetch('/api/admin.js?action=login', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: $('key').value }),
+        });
+        if (r.ok) { showApp(); } else { $('loginMsg').textContent = 'キーが違います'; $('loginMsg').className = 'msg err'; }
+      } catch (e) { $('loginMsg').textContent = '接続エラー'; }
+    });
+    $('logoutBtn').addEventListener('click', () => { document.cookie = 'en_admin=; Max-Age=0; Path=/'; showLogin(); });
+
+    document.querySelectorAll('.tabs button').forEach((b) => {
+      b.addEventListener('click', () => {
+        document.querySelectorAll('.tabs button').forEach((x) => x.classList.remove('on'));
+        b.classList.add('on');
+        document.querySelectorAll('main > div[id^=tab-]').forEach((x) => x.hidden = true);
+        $('tab-' + b.dataset.tab).hidden = false;
+        if (b.dataset.tab === 'calendar') loadCalendar();
+        if (b.dataset.tab === 'blocked') loadBlocked();
+        if (b.dataset.tab === 'settings') loadSettings();
+      });
+    });
+
+    const STATUS_JA = { confirmed: '確定', pending_payment: '決済待ち', expired: '期限切れ', cancelled: 'キャンセル', refunded: '返金済み', payment_failed: '失敗' };
+
+    async function loadBookings() {
+      try {
+        const d = await api('bookings.list', { status: $('filterStatus').value, q: $('searchQ').value });
+        const tb = $('bookingRows');
+        tb.innerHTML = '';
+        d.bookings.forEach((b) => {
+          const tr = document.createElement('tr');
+          const dt = new Date(b.created_at || 0);
+          tr.innerHTML = '<td>' + b.id + '</td>'
+            + '<td><span class="status s-' + b.status + '">' + (STATUS_JA[b.status] || b.status) + '</span></td>'
+            + '<td>' + b.checkin + '</td><td>' + b.checkout + '</td><td>' + b.nights + '</td>'
+            + '<td>' + b.adults + (b.children ? '+' + b.children : '') + '</td>'
+            + '<td class="wrap">' + esc(b.guest_name) + '</td>'
+            + '<td class="wrap">' + esc(b.guest_email) + '<br>' + esc(b.guest_phone) + '</td>'
+            + '<td>¥' + (b.price_jpy || 0).toLocaleString() + '</td>'
+            + '<td>' + (b.email_status || '') + '</td>'
+            + '<td>'
+            + '<button class="act" data-a="detail" data-id="' + b.id + '">詳細</button>'
+            + (b.status === 'confirmed' ? '<button class="act" data-a="cancel" data-id="' + b.id + '">キャンセル</button>' : '')
+            + (b.status === 'confirmed' ? '<button class="act" data-a="refund" data-id="' + b.id + '">返金</button>' : '')
+            + (b.status === 'confirmed' && b.email_status !== 'sent' ? '<button class="act" data-a="resend" data-id="' + b.id + '">メール再送</button>' : '')
+            + '</td>';
+          tb.appendChild(tr);
+        });
+        $('bookingCount').textContent = d.bookings.length + '件';
+        tb.querySelectorAll('button').forEach((btn) => {
+          btn.addEventListener('click', () => rowAction(btn.dataset.a, btn.dataset.id));
+        });
+      } catch (e) { /* ログイン画面へ */ }
+    }
+
+    async function rowAction(a, id) {
+      if (a === 'detail') {
+        const d = await api('booking.get', { id });
+        const b = d.booking;
+        alert([b.id, '状態: ' + (STATUS_JA[b.status] || b.status),
+          b.checkin + ' 〜 ' + b.checkout + '（' + b.nights + '泊）',
+          '大人' + b.adults + '名 / 乳幼児' + (b.children || 0) + '名',
+          'お名前: ' + b.guest_name + '（' + (b.guest_kana || '') + '）',
+          b.guest_email, b.guest_phone,
+          '住所: ' + (b.guest_address || '-'),
+          '到着予定: ' + (b.arrival_time || '-'),
+          'オプション: ' + JSON.stringify(b.options),
+          '金額: ¥' + (b.price_jpy || 0).toLocaleString(),
+          'メール: ' + (b.email_status || ''),
+          '要望: ' + (b.notes || '-'),
+          'メモ: ' + (b.admin_memo || '-')].join('\n'));
+        return;
+      }
+      if (a === 'cancel') {
+        if (!confirm('この予約をキャンセルしますか？日程は解放されます。')) return;
+        await api('booking.cancel', { id });
+        loadBookings();
+        return;
+      }
+      if (a === 'refund') {
+        if (!confirm('Stripeで返金し、予約を返金済みにしますか？')) return;
+        const d = await api('booking.refund', { id });
+        alert('返金しました（' + d.refund_id + '）');
+        loadBookings();
+        return;
+      }
+      if (a === 'resend') {
+        await api('booking.resend-emails', { id });
+        alert('再送しました');
+        loadBookings();
+        return;
+      }
+    }
+
+    $('searchBtn').addEventListener('click', loadBookings);
+    $('filterStatus').addEventListener('change', loadBookings);
+
+    async function loadCalendar() {
+      const y = parseInt($('calYear').textContent, 10) || new Date().getFullYear();
+      const d = await api('calendar', { year: y });
+      const today = new Date().toISOString().slice(0, 10);
+      const bookedMap = {};
+      d.bookings.forEach((b) => {
+        if (b.status === 'confirmed' || b.status === 'pending_payment') {
+          bookedMap[b.checkin] = (bookedMap[b.checkin] || '') + 'in/' + b.guest_name.slice(0, 4) + ' ';
+          bookedMap[b.checkout] = (bookedMap[b.checkout] || '') + 'out ';
+        }
+      });
+      const blockedSet = new Set(d.blocked.map((x) => x.date));
+      let html = '';
+      for (let m = 1; m <= 12; m++) {
+        html += '<div class="card"><h2>' + y + '年 ' + m + '月</h2><div class="grid2">';
+        const first = new Date(y, m - 1, 1);
+        for (let i = 0; i < first.getDay(); i++) html += '<div class="calcell"></div>';
+        const dim = new Date(y, m, 0).getDate();
+        for (let day = 1; day <= dim; day++) {
+          const ds = y + '-' + String(m).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+          const cls = 'calcell' + (bookedMap[ds] ? ' booked' : '') + (blockedSet.has(ds) ? ' blocked' : '') + (ds < today ? ' past' : '');
+          const tag = blockedSet.has(ds) ? '停止' : (bookedMap[ds] || '');
+          html += '<div class="' + cls + '"><div class="d">' + day + '</div><div>' + tag + '</div></div>';
+        }
+        html += '</div></div>';
+      }
+      $('yearCal').innerHTML = html;
+    }
+    $('calPrevY').addEventListener('click', () => { $('calYear').textContent = parseInt($('calYear').textContent, 10) - 1; loadCalendar(); });
+    $('calNextY').addEventListener('click', () => { $('calYear').textContent = parseInt($('calYear').textContent, 10) + 1; loadCalendar(); });
+
+    async function loadBlocked() {
+      const d = await api('blocked.list');
+      const tb = $('blockedRows');
+      tb.innerHTML = '';
+      d.blocked.forEach((x) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + x.date + '</td><td>' + esc(x.reason || '') + '</td><td><button class="act" data-d="' + x.date + '">解除</button></td>';
+        tb.appendChild(tr);
+      });
+      tb.querySelectorAll('button').forEach((b) => {
+        b.addEventListener('click', async () => {
+          await api('blocked.remove', {}, { from: b.dataset.d, to: b.dataset.d });
+          loadBlocked();
+        });
+      });
+    }
+    $('blAdd').addEventListener('click', async () => {
+      try {
+        await api('blocked.add', {}, { from: $('blFrom').value, to: $('blTo').value || $('blFrom').value, reason: $('blReason').value });
+        $('blMsg').textContent = '登録しました'; $('blMsg').className = 'msg ok';
+        loadBlocked();
+      } catch (e) { $('blMsg').textContent = '登録に失敗しました'; $('blMsg').className = 'msg err'; }
+    });
+    $('blRemove').addEventListener('click', async () => {
+      await api('blocked.remove', {}, { from: $('blFrom').value, to: $('blTo').value || $('blFrom').value });
+      loadBlocked();
+    });
+
+    async function loadSettings() {
+      const d = await api('settings.get');
+      $('cancelText').value = (d.settings && d.settings.cancellationPolicyText) || '';
+      const logs = await api('logs');
+      const tb = $('logRows');
+      tb.innerHTML = '';
+      logs.logs.forEach((l) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + new Date(l.created_at).toLocaleString('ja-JP') + '</td><td>' + esc(l.action) + '</td><td>' + esc(JSON.stringify(l.detail || '')) + '</td>';
+        tb.appendChild(tr);
+      });
+    }
+    $('saveCancel').addEventListener('click', async () => {
+      await api('settings.save', {}, { cancellationPolicyText: $('cancelText').value });
+      $('setMsg').textContent = '保存しました。新しい予約の確認画面に反映されます。'; $('setMsg').className = 'msg ok';
+    });
+
+    $('mAdd').addEventListener('click', async () => {
+      try {
+        await api('booking.manual', {}, {
+          checkin: $('mIn').value, checkout: $('mOut').value,
+          adults: parseInt($('mAdults').value, 10), children: parseInt($('mChildren').value, 10) || 0,
+          name: $('mName').value, email: $('mEmail').value, phone: $('mPhone').value,
+          notes: $('mNotes').value,
+        });
+        $('mMsg').textContent = '登録しました（確定状態）'; $('mMsg').className = 'msg ok';
+      } catch (e) { $('mMsg').textContent = '登録に失敗: ' + e.message; $('mMsg').className = 'msg err'; }
+    });
+
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    /* 初回: セッション確認のため軽いAPIを叩いて401ならログイン表示 */
+    (async () => {
+      try {
+        await api('blocked.list');
+        showApp();
+      } catch (e) { /* showLogin済み */ }
+    })();
+  </script>
+</body>
+</html>
