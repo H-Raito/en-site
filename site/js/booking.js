@@ -321,7 +321,7 @@ export function initBooking() {
       return;
     }
     if (n > PRICING.maxNights) {
-      showErr(1, '連泊は最大' + PRICING.maxNights + '泊までです。30泊を超えるご利用はお電話にてご相談ください。');
+      showErr(1, '連泊は最大' + PRICING.maxNights + '泊までです。' + PRICING.maxNights + '泊を超える長期のご利用はお電話にてご相談ください。');
       return;
     }
     if (rangeHasBlocked(state.checkin, state.checkout)) {

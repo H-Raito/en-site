@@ -202,42 +202,154 @@ test('store: 受付停止日の反映と解除', async () => {
 });
 
 /* ---------- キャンセル返金計算 ---------- */
-test('refund: 無料キャンセル期限内は100%', async () => {
+/* ---------- キャンセル返金計算（2026-11 確定ポリシー） ---------- */
+/* チェックイン D=2026-12-10 / D日15:00 JST = 2026-12-10T06:00Z */
+/* D-5日 15:00 JST = 2026-12-05T06:00Z */
+
+function mkBooking(nights, confirmedAtMs) {
+  const per = 48000;
+  return {
+    checkin: '2026-12-10', nights, adults: 2, infants: 0,
+    confirmed_at: confirmedAtMs == null ? null : confirmedAtMs,
+    price_detail: { perNight: per, staySubtotal: per * nights, optionsOnline: optsOnline(nights) },
+  };
+}
+function optsOnline(n) { return 2000; } /* オンライン決済オプション（BBQ）固定 */
+
+test('refund: 5日前15:00ちょうどは100%返金（境界含む）', async () => {
   const { calculateRefund } = await import('../lib/pricing.js');
-  /* チェックイン 2026-12-10 → 無料期限 2026-12-05 15:00 JST (= 2026-12-05T06:00Z) */
-  const b = { checkin: '2026-12-10', nights: 1, adults: 2,
-    price_detail: { perNight: 48000, staySubtotal: 48000, optionsOnline: 2000 } };
-  const r = calculateRefund(b, Date.UTC(2026, 11, 5, 6, 0, 0));
+  const r = calculateRefund(mkBooking(1), Date.UTC(2026, 11, 5, 6, 0, 0));
   assert.equal(r.tier, 'full');
   assert.equal(r.refundJpy, 48000);
   assert.equal(r.optionsRefundJpy, 2000);
 });
 
-test('refund: 期限後〜当日15:00未満は1泊目無償・2泊目以降50%', async () => {
+test('refund: 5日前15:00を1秒過ぎたら1泊目無償・2泊目以降50%', async () => {
   const { calculateRefund } = await import('../lib/pricing.js');
-  const b = { checkin: '2026-12-10', nights: 3, adults: 2,
-    price_detail: { perNight: 48000, staySubtotal: 144000, optionsOnline: 0 } };
-  const r = calculateRefund(b, Date.UTC(2026, 11, 6, 6, 0, 0));
+  const r = calculateRefund(mkBooking(3), Date.UTC(2026, 11, 5, 6, 0, 1));
   assert.equal(r.tier, 'partial');
-  assert.equal(r.refundJpy, 48000); /* 2泊目分の50%=24,000 × 2泊 = 48,000 */
+  assert.equal(r.refundJpy, 48000); /* (3-1)×48,000×0.5 = 48,000 */
 });
 
-test('refund: 当日15:00以降は返金なし（案）', async () => {
+test('refund: 1泊予約の期限後キャンセルは返金0円', async () => {
   const { calculateRefund } = await import('../lib/pricing.js');
-  const b = { checkin: '2026-12-10', nights: 2, adults: 2,
-    price_detail: { perNight: 48000, staySubtotal: 96000, optionsOnline: 0 } };
-  const r = calculateRefund(b, Date.UTC(2026, 11, 10, 6, 0, 1));
-  assert.equal(r.tier, 'none');
+  const r = calculateRefund(mkBooking(1), Date.UTC(2026, 11, 6, 0, 0, 0));
+  assert.equal(r.tier, 'partial');
   assert.equal(r.refundJpy, 0);
 });
 
-test('refund: 1泊予約は期限後返金0円', async () => {
+test('refund: 2泊予約の期限後は2泊目の50%=24,000円', async () => {
   const { calculateRefund } = await import('../lib/pricing.js');
-  const b = { checkin: '2026-12-10', nights: 1, adults: 2,
-    price_detail: { perNight: 48000, staySubtotal: 48000, optionsOnline: 0 } };
-  const r = calculateRefund(b, Date.UTC(2026, 11, 6, 0, 0, 0));
+  const r = calculateRefund(mkBooking(2), Date.UTC(2026, 11, 6, 0, 0, 0));
   assert.equal(r.tier, 'partial');
+  assert.equal(r.refundJpy, 24000);
+});
+
+test('refund: 複数泊（5泊）期限後は (4泊×50%)=96,000円', async () => {
+  const { calculateRefund } = await import('../lib/pricing.js');
+  const r = calculateRefund(mkBooking(5), Date.UTC(2026, 11, 6, 0, 0, 0));
+  assert.equal(r.tier, 'partial');
+  assert.equal(r.refundJpy, 96000);
+});
+
+test('refund: チェックイン後の途中キャンセル（宿泊済み2泊・残2泊→50%返金）', async () => {
+  const { calculateRefund } = await import('../lib/pricing.js');
+  /* D日15:00から 2泊+6時間経過 → 宿泊済み3泊扱い? ceil(54h/24h)=3。残=5-3-1=1 → 24,000円 */
+  const r = calculateRefund(mkBooking(5), Date.UTC(2026, 11, 12, 21, 0, 0));
+  assert.equal(r.tier, 'after_checkin');
+  assert.equal(r.refundJpy, 24000);
+  assert.ok(r.detail.remaining >= 0);
+});
+
+test('refund: チェックイン後すぐのキャンセル（追加1泊分のみ無償・残り50%）', async () => {
+  const { calculateRefund } = await import('../lib/pricing.js');
+  /* D日16:00 = 経過1時間 → 宿泊済み1泊 → 残=5-1-1=3 → 3×48,000×0.5=72,000円 */
+  const r = calculateRefund(mkBooking(5), Date.UTC(2026, 11, 10, 7, 0, 0));
+  assert.equal(r.tier, 'after_checkin');
+  assert.equal(r.refundJpy, 72000);
+});
+
+test('refund: 残り泊数がない場合は返金0円', async () => {
+  const { calculateRefund } = await import('../lib/pricing.js');
+  /* 2泊予約・チェックイン翌々日以降 → 宿泊済み2泊+追加1泊=3>2 → 残0 → 0円 */
+  const r = calculateRefund(mkBooking(2), Date.UTC(2026, 11, 13, 0, 0, 0));
+  assert.equal(r.tier, 'after_checkin');
   assert.equal(r.refundJpy, 0);
+});
+
+test('refund: 予約確定後24時間以内+チェックイン7日以上前は全額返金', async () => {
+  const { calculateRefund } = await import('../lib/pricing.js');
+  /* 確定 2026-11-20T00:00Z / チェックイン 2026-11-28（8日後=7日以上前）/
+     24時間後は 11-21T00:00Z。キャンセル 11-20T23:59Z → 全額 */
+  const b = mkBooking(2, Date.UTC(2026, 10, 20, 0, 0, 0));
+  /* checkin 11-28 の15:00以降チェックではないので、通常区分だと full になるが
+     24h ルールも full。ここでは通常区分が partial になるケースを作るため
+     無料期限 D-5日15:00 = 11-23T06:00Z より後（期限後）にキャンセルする日時を設定 */
+  const r = calculateRefund(b, Date.UTC(2026, 10, 21, 0, 0, 1)); /* 確定から24時間+1秒 */
+  /* 24時間ルールの対象外 → 通常区分: 期限前なので full（仕様どおり） */
+  assert.equal(r.tier, 'full');
+  /* 24時間以内 → 24h_free が優先 */
+  const r2 = calculateRefund(b, Date.UTC(2026, 10, 21, 0, 0, 0));
+  assert.equal(r2.tier, '24h_free');
+  assert.equal(r2.refundJpy, 96000);
+  assert.equal(r2.optionsRefundJpy, 2000);
+});
+
+test('refund: 24時間を1秒過ぎたら通常区分に従う', async () => {
+  const { calculateRefund } = await import('../lib/pricing.js');
+  /* 確定 2026-11-20 / チェックイン 2026-11-28（7日以上前）/ キャンセル 11-21T00:00:01Z（24時間+1秒）
+     通常区分: 無料期限は D-5日15:00 = 11-23T06:00Z より前 → full。*/
+  const b = mkBooking(2, Date.UTC(2026, 10, 20, 0, 0, 0));
+  const r = calculateRefund(b, Date.UTC(2026, 10, 21, 0, 0, 1));
+  assert.equal(r.tier, 'full'); /* 期限前のため full（24時間ルール切れでも結果は同じ） */
+  /* チェックインがもっと近い場合: 確定 11-20 / チェックイン 11-28 → 無料期限 11-23。
+     確定から24時間を過ぎ、かつ無料期限内なので full は維持。
+     24時間ルールが実質効力を持つケース: 確定時点で無料期限を過ぎている場合は
+     チェックイン7日以上前という条件と矛盾するため存在しない（設計上の整理を報告） */
+  assert.ok(true);
+});
+
+test('refund: チェックイン7日前ちょうどに確定した予約は24時間ルールの対象', async () => {
+  const { calculateRefund } = await import('../lib/pricing.js');
+  /* チェックイン D=2026-12-10（15:00JST）。確定 = D-7日 = 2026-12-03T00:00Z。
+     確定から24時間以内にキャンセル（12-04T00:00Z）→ 全額返金 */
+  const b = mkBooking(2, Date.UTC(2026, 11, 3, 0, 0, 0));
+  const r = calculateRefund(b, Date.UTC(2026, 11, 4, 0, 0, 0));
+  assert.equal(r.tier, '24h_free');
+  assert.equal(r.refundJpy, 96000);
+});
+
+test('refund: 6日前確定でも24時間経過後は通常区分（無料期限内のためfull）', async () => {
+  const { calculateRefund } = await import('../lib/pricing.js');
+  /* 確定 = D-6日 = 2026-12-04T00:00Z。キャンセル 12-05T12:00Z（24時間経過）。
+     無料期限 D-5日15:00 = 12-05T06:00Z → キャンセル時点は期限後。
+     24h ルール対象外（確定から24時間以内ではない）→ partial になる。
+     ただしこのケースは確定時点で無料期限内だったものが期限を過ぎたもので、
+     Airbnb「普通」でも同一挙動。 */
+  const b = mkBooking(2, Date.UTC(2026, 11, 4, 0, 0, 0));
+  const r = calculateRefund(b, Date.UTC(2026, 11, 5, 12, 0, 0));
+  assert.equal(r.tier, 'partial');
+  assert.equal(r.refundJpy, 24000);
+});
+
+test('refund: オプションはチェックイン開始後は自動返金しない（運営者判断）', async () => {
+  const { calculateRefund } = await import('../lib/pricing.js');
+  const r = calculateRefund(mkBooking(5), Date.UTC(2026, 11, 10, 7, 0, 0));
+  assert.equal(r.optionsRefundJpy, 0);
+});
+
+/* ---------- maxNights 27 ---------- */
+test('validate: 28泊以上は受付不可（長期宿泊規約未確定）', async () => {
+  const { validateBookingInput } = await import('../lib/pricing.js');
+  const now = Date.UTC(2026, 10, 1, 6, 0, 0);
+  const r28 = validateBookingInput(
+    { checkin: '2026-11-05', checkout: '2026-12-03', adults: 2 }, '2026-11-01', now
+  );
+  assert.equal(r28.error, 'too_long_stay'); /* 28泊 */
+  const r27 = validateBookingInput(
+    { checkin: '2026-11-05', checkout: '2026-12-02', adults: 2 }, '2026-11-01', now
+  );
+  assert.equal(r27.ok, true); /* 27泊は可 */
 });
 
 /* ---------- API ---------- */

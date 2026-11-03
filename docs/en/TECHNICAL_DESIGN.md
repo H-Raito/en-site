@@ -99,6 +99,21 @@ pending_payment ──Webhook(paid) or verify(paid)──▶ confirmed ──返
 確定遷移は冪等: confirmBooking は pending_payment からのみ confirmed へ。
 返金は updateBookingIfConfirmed（confirmed からのみ）で二重返金を排他。
 
+### 返金額の計算（サーバー側・lib/pricing.js calculateRefund）
+
+日本時間のチェックイン予定日 D の 15:00 を基準に区分を判定する（confirmed_at は確定時刻として記録）:
+
+| 区分 | 条件 | 返金額 |
+|---|---|---|
+| full | now <= D-5日 15:00 | 宿泊料金 100% |
+| 24h_free（優先） | 確定が D-7日以上前 かつ confirmed_at + 24h 以内 | 宿泊料金+オンラインオプション 100% |
+| partial | 期限後〜 D日 15:00 未満 | 1泊目無償・2泊目以降 50% |
+| after_checkin | D日 15:00 以降 | 宿泊済み泊数+追加 1 泊分を無償とし、残り未宿泊分の 50%（残 0 泊なら 0 円）。宿泊済み泊数は経過時間からサーバー確定 |
+
+オンライン決済オプションは提供前キャンセルで全額返金。チェックイン開始後は運営者判断（自動返金しない）。
+現地払い分・未徴収のアーリーチェックインは Stripe 返金対象外。
+返金実行は管理画面（Stripe 部分返金・冪等キー付き・失敗時は confirmed に復帰）。
+
 ## API一覧
 
 | 経路 | メソッド | 認証 | 機能 |
