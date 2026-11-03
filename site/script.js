@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
       slides[current].classList.remove('is-active');
       current = (current + 1) % total;
       slides[current].classList.add('is-active');
-    }, 8000);
+    }, 5000);
   }
 
 

@@ -460,10 +460,10 @@
               <span id="dispNights" class="date-display__nights"></span>
             </div>
             <div class="guest-select">
-              <div class="guest-select__item"><label for="adults">大人（小学生以上）</label><select id="adults"></select></div>
-              <div class="guest-select__item"><label for="children">乳幼児（2歳以下・無料）</label><select id="children"></select></div>
+              <div class="guest-select__item"><label for="adults">大人（3歳以上）</label><select id="adults"></select></div>
+              <div class="guest-select__item"><label for="children">2歳以下の乳幼児（無料・寝具アメニティなし）</label><select id="children"></select></div>
             </div>
-            <p class="booking-notice" id="capacityNote">エアコンを備えた4部屋のみのご利用の場合、宿泊可能人数は13名までです。14名以上でご利用の場合は、空調のないお部屋の使用について事前にご相談ください。</p>
+            <p class="booking-notice" id="capacityNote">ご予約はチェックイン3日前の15:00まで承ります。エアコンを備えた4部屋のみのご利用の場合、宿泊可能人数は13名までです。14名以上でご利用の場合は、空調のないお部屋の使用について事前にご相談ください。</p>
             <div class="included-box">
               <h4 class="included-box__title">料金に含まれるもの</h4>
               <div class="included-box__grid">
@@ -497,7 +497,12 @@
                   <span class="opt-chip__price">¥5,000</span>
                 </label>
               </div>
-              <p class="options-box__note">※オプション料金は決済に含まれません。当日、現金にてお支払いいただきます（要事前連絡）。</p>
+              <p class="options-box__note">※アーリーチェックインは希望受付です。前日の予約・清掃状況により承認後に確定します（現地精算）。</p>
+            </div>
+            <div class="payment-method-box">
+              <h4 class="payment-method-box__title">お支払い方法</h4>
+              <label class="pay-option"><input type="radio" name="paymentMethod" value="online" checked><span class="pay-option__mark"></span><span class="pay-option__body"><strong>まとめてオンライン決済</strong><small>宿泊料＋オプション料金をカードで決済（確定・返金ポリシー適用）</small></span></label>
+              <label class="pay-option"><input type="radio" name="paymentMethod" value="onsite"><span class="pay-option__mark"></span><span class="pay-option__body"><strong>宿泊料のみオンライン決済</strong><small>宿泊料をカードで決済し、オプション料金は現地で現金支払い</small></span></label>
             </div>
             <span class="field-error" id="step1Error" hidden></span>
             <button type="button" id="toStep2" class="btn-booking">日付を選択して次へ</button>
@@ -566,8 +571,10 @@
             <div class="summary-card__row"><span>宿泊料</span><span id="sumSubtotal">-</span></div>
             <div class="summary-card__row"><span>1泊あたり</span><span id="sumPerNight">-</span></div>
             <div class="summary-card__row"><span>オプション</span><span id="sumOptions">当日現金払い</span></div>
-            <div class="summary-card__total"><span>合計（税込）</span><span id="sumTotal">¥-</span></div>
-            <p class="summary-card__note">決済はStripe（クレジットカード）で承ります。</p>
+            <div class="summary-card__row"><span>オンライン決済額</span><span id="sumOnline">¥-</span></div>
+            <div class="summary-card__row"><span>現地支払予定額</span><span id="sumOnsite">-</span></div>
+            <div class="summary-card__total"><span>オンライン決済額（税込）</span><span id="sumTotal">¥-</span></div>
+            <p class="summary-card__note">決済はStripe（クレジットカード）。オプション現地払い選択時は宿泊料のみ決済します。</p>
           </div>
         </aside>
       </div>

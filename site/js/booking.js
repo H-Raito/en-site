@@ -10,7 +10,8 @@ let state = {
   checkin: null,
   checkout: null,
   adults: 2,
-  children: 0,
+  infants: 0,
+  paymentMethod: 'online',
   bbq: false,
   sauna: false,
   earlyCheckin: false,
@@ -90,7 +91,14 @@ export function initBooking() {
   }
 
   function isNightBlocked(s) {
-    return bookedNights.has(s) || blockedDates.has(s);
+    return bookedNights.has(s) || blockedDates.has(s) || isBeforeCutoff(s);
+  }
+
+  /* 予約受付期限（チェックイン3日前の15:00・日本時間）を過ぎた日は選択不可 */
+  function isBeforeCutoff(s) {
+    /* s + 3日 の 15:00 JST がまだ来ていない夜は受付不可（日単位の近似・サーバーが最終判定） */
+    const limit = addDays(todayStr, 2);
+    return s <= limit;
   }
   function rangeHasBlocked(a, b) {
     /* [a, b) の各夜が空いているか */
@@ -204,7 +212,7 @@ export function initBooking() {
 
   function buildAdultOptions() {
     let html = '';
-    for (let n = 1; n <= PRICING.maxAdults; n++) {
+    for (let n = 1; n <= (PRICING.maxAdults || PRICING.maxPaidGuests || 16); n++) {
       html += '<option value="' + n + '"' + (n === 2 ? ' selected' : '') + '>' + n + '名</option>';
     }
     adultsEl.innerHTML = html;
@@ -229,8 +237,11 @@ export function initBooking() {
     sumCheckout.textContent = state.checkout ? fmtJa(state.checkout) : '-';
     sumNights.textContent = state.checkin && state.checkout ? nights(state.checkin, state.checkout) + '泊' : '-';
     const adults = parseInt(adultsEl.value, 10) || 0;
-    const children = parseInt(childrenEl.value, 10) || 0;
-    sumGuests.textContent = '大人' + adults + '名 / 乳幼児' + children + '名';
+    const infants = parseInt(childrenEl.value, 10) || 0;
+    state.adults = adults;
+    state.infants = infants;
+    state.paymentMethod = document.querySelector('input[name=\"paymentMethod\"]:checked') ? document.querySelector('input[name=\"paymentMethod\"]:checked').value : 'online';
+    sumGuests.textContent = '大人（3歳以上）' + adults + '名 / 2歳以下' + infants + '名';
 
     const optNames = [];
     if (state.bbq) optNames.push('BBQ');
@@ -266,7 +277,11 @@ export function initBooking() {
       lastQuote = d;
       sumSubtotal.textContent = '¥' + yen(d.subtotal);
       sumPerNight.textContent = '¥' + yen(d.perNight);
-      sumTotal.textContent = '¥' + yen(d.total);
+      sumTotal.textContent = '¥' + yen(d.onlineTotal);
+      const onsiteEl = document.getElementById('sumOnsite');
+      if (onsiteEl) onsiteEl.textContent = d.onsiteAmount > 0 ? '¥' + yen(d.onsiteAmount) : 'なし';
+      const onlineEl = document.getElementById('sumOnline');
+      if (onlineEl) onlineEl.textContent = '¥' + yen(d.onlineTotal);
     } catch (e) {
       sumSubtotal.textContent = '-';
       sumPerNight.textContent = '-';
@@ -314,7 +329,7 @@ export function initBooking() {
       return;
     }
     state.adults = parseInt(adultsEl.value, 10) || 0;
-    state.children = parseInt(childrenEl.value, 10) || 0;
+    state.infants = parseInt(childrenEl.value, 10) || 0;
     if (!lastQuote) {
       showErr(1, '料金の取得に失敗しました。日付を選び直してください。');
       return;
@@ -397,8 +412,11 @@ export function initBooking() {
   function buildConfirmation() {
     const get = (id) => (document.getElementById(id).value || '').trim();
     const adults = parseInt(adultsEl.value, 10) || 0;
-    const children = parseInt(childrenEl.value, 10) || 0;
+    const infants = parseInt(childrenEl.value, 10) || 0;
     const q = lastQuote;
+    const payLabel = state.paymentMethod === 'onsite'
+      ? '宿泊料のみオンライン決済／オプションは現地払い'
+      : '宿泊料とオプションをまとめてオンライン決済';
     const optNames = [];
     if (state.bbq) optNames.push('BBQセット（当日現金 ¥2,000）');
     if (state.sauna) optNames.push('テントサウナ（当日現金 ¥2,000）');
@@ -409,7 +427,7 @@ export function initBooking() {
       .concat('<div class="confirm-box__row"><span>チェックイン</span><span>' + esc(fmtJaFull(state.checkin)) + ' 15:00〜22:00</span></div>')
       .concat('<div class="confirm-box__row"><span>チェックアウト</span><span>' + esc(fmtJaFull(state.checkout)) + ' 〜12:00</span></div>')
       .concat('<div class="confirm-box__row"><span>宿泊数</span><span>' + nights(state.checkin, state.checkout) + '泊</span></div>')
-      .concat('<div class="confirm-box__row"><span>宿泊人数</span><span>大人' + adults + '名 / 乳幼児' + children + '名</span></div>')
+      .concat('<div class="confirm-box__row"><span>宿泊人数</span><span>大人（3歳以上）' + adults + '名 / 2歳以下' + infants + '名</span></div>')
       .concat('<div class="confirm-box__row"><span>到着予定</span><span>' + esc(get('arrival')) + '</span></div>')
       .concat('</div>')
       .concat('<div class="confirm-box__section"><h4>お客様情報</h4>')
@@ -418,12 +436,16 @@ export function initBooking() {
       .concat('<div class="confirm-box__row"><span>電話番号</span><span>' + esc(get('phone')) + '</span></div>')
       .concat('<div class="confirm-box__row"><span>住所</span><span>〒' + esc(get('zip')) + ' ' + esc(get('prefecture')) + esc(get('address')) + '</span></div>')
       .concat('<div class="confirm-box__row"><span>オプション希望</span><span>' + esc(optNames.length ? optNames.join(' / ') : 'なし') + '</span></div>')
+      .concat('<div class="confirm-box__row"><span>お支払い方法</span><span>' + esc(payLabel) + '</span></div>')
       .concat(get('notes') ? '<div class="confirm-box__row"><span>要望</span><span>' + esc(get('notes')) + '</span></div>' : '')
       .concat('</div>')
-      .concat('<div class="confirm-box__section"><h4>お支払い（オンラインカード決済）</h4>')
-      .concat('<div class="confirm-box__row"><span>宿泊料（' + nights(state.checkin, state.checkout) + '泊 / 大人' + adults + '名・税込）</span><span>¥' + yen(q.subtotal) + '</span></div>')
+      .concat('<div class="confirm-box__section"><h4>お支払い</h4>')
+      .concat('<div class="confirm-box__row"><span>宿泊料（' + nights(state.checkin, state.checkout) + '泊 / 3歳以上' + adults + '名・税込）</span><span>¥' + yen(q.subtotal) + '</span></div>')
       .concat('<div class="confirm-box__row"><span>1泊あたり</span><span>¥' + yen(q.perNight) + '</span></div>')
-      .concat('<div class="confirm-box__total"><span>合計（税込）</span><span>¥' + yen(q.total) + '</span></div>')
+      .concat(q.optionsOnline > 0 ? '<div class="confirm-box__row"><span>オプション（オンライン決済分）</span><span>¥' + yen(q.optionsOnline) + '</span></div>' : '')
+      .concat('<div class="confirm-box__total"><span>オンライン決済額（税込）</span><span>¥' + yen(q.onlineTotal) + '</span></div>')
+      .concat('<div class="confirm-box__row"><span>現地支払予定額</span><span>' + (q.onsiteAmount > 0 ? '¥' + yen(q.onsiteAmount) + '（当日現金）' : 'なし') + '</span></div>')
+      .concat(state.earlyCheckin ? '<div class="confirm-box__row"><span>アーリーチェックイン</span><span>希望受付中（承認後に確定・現地精算 ¥5,000）</span></div>' : '')
       .concat('</div>');
     document.getElementById('confirmBox').innerHTML = rows.join('');
   }
@@ -471,10 +493,11 @@ export function initBooking() {
           checkin: state.checkin,
           checkout: state.checkout,
           adults: parseInt(adultsEl.value, 10),
-          children: parseInt(childrenEl.value, 10) || 0,
+          infants: parseInt(childrenEl.value, 10) || 0,
           bbq: state.bbq,
           sauna: state.sauna,
           earlyCheckin: state.earlyCheckin,
+          paymentMethod: state.paymentMethod,
           name: get('lastName') + ' ' + get('firstName'),
           kana: get('lastNameKana') + ' ' + get('firstNameKana'),
           email: get('email'),
@@ -515,8 +538,11 @@ export function initBooking() {
     state.adults = parseInt(adultsEl.value, 10) || 0;
     refreshQuote();
   });
+  document.querySelectorAll('input[name="paymentMethod"]').forEach(function (r) {
+    r.addEventListener('change', function () { refreshQuote(); });
+  });
   childrenEl.addEventListener('change', function () {
-    state.children = parseInt(childrenEl.value, 10) || 0;
+    state.infants = parseInt(childrenEl.value, 10) || 0;
     refreshQuote();
   });
   [['optBbq', 'bbq'], ['optSauna', 'sauna'], ['optEarly', 'earlyCheckin']].forEach(function (pair) {
@@ -605,10 +631,11 @@ export function initBooking() {
       + '<div class="confirm-box__section"><h4>宿泊期間</h4>'
       + '<div class="confirm-box__row"><span>チェックイン</span><span>' + esc(b.checkin) + ' 15:00〜22:00</span></div>'
       + '<div class="confirm-box__row"><span>チェックアウト</span><span>' + esc(b.checkout) + ' 〜12:00</span></div>'
-      + '<div class="confirm-box__row"><span>宿泊人数</span><span>大人' + b.adults + '名 / 乳幼児' + (b.children || 0) + '名</span></div>'
+      + '<div class="confirm-box__row"><span>宿泊人数</span><span>大人（3歳以上）' + b.adults + '名 / 2歳以下' + (b.infants || 0) + '名</span></div>'
       + '</div>'
       + '<div class="confirm-box__section"><h4>お支払い</h4>'
-      + '<div class="confirm-box__row"><span>合計（税込）</span><span>¥' + yen(b.priceJpy) + '</span></div>'
+      + '<div class="confirm-box__row"><span>オンライン決済額（税込）</span><span>¥' + yen(b.priceJpy) + '</span></div>'
+      + '<div class="confirm-box__row"><span>現地支払予定額</span><span>' + (b.onsiteAmount > 0 ? '¥' + yen(b.onsiteAmount) + '（当日現金）' : 'なし') + '</span></div>'
       + (optNames.length ? '<div class="confirm-box__row"><span>オプション希望</span><span>' + esc(optNames.join('・')) + '（当日現金払い）</span></div>' : '')
       + '</div>';
     summary.innerHTML = html;

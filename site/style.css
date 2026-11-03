@@ -623,3 +623,36 @@ html { overflow-x: clip; }
 .booking-complete__top { display: inline-block; margin-top: 24px; text-decoration: none; max-width: 280px; }
 
 .field-error { display: block; font-size: 12px; color: #F0A9A9; margin: 10px 0 4px; letter-spacing: 0.04em; }
+
+
+/* 支払方法選択 */
+.payment-method-box { margin-bottom: 24px; }
+.payment-method-box__title { font-size: 10px; letter-spacing: 0.15em; color: rgba(255,255,255,0.55); margin-bottom: 14px; }
+.pay-option { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); cursor: pointer; margin-bottom: 10px; transition: border-color 0.3s var(--ease), background 0.3s var(--ease); }
+.pay-option:hover { border-color: rgba(255,255,255,0.32); }
+.pay-option input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.pay-option__mark { flex-shrink: 0; width: 14px; height: 14px; border: 1px solid rgba(255,255,255,0.5); border-radius: 50%; margin-top: 3px; position: relative; }
+.pay-option:has(input:checked) { border-color: rgba(184,149,106,0.55); background: rgba(184,149,106,0.10); }
+.pay-option:has(input:checked) .pay-option__mark { border-color: var(--accent-light); }
+.pay-option:has(input:checked) .pay-option__mark::after { content: ''; position: absolute; inset: 2px; background: var(--accent-light); border-radius: 50%; }
+.pay-option__body strong { display: block; font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.9); letter-spacing: 0.04em; }
+.pay-option__body small { display: block; font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 3px; line-height: 1.6; }
+
+/* HERO スライド: ゆっくりしたズーム */
+@keyframes heroZoom { from { transform: scale(1); } to { transform: scale(1.025); } }
+.hero__slide.is-active { animation: heroZoom 7s var(--ease) forwards; }
+
+/* ボタン: 矢印マイクロインタラクション */
+.btn-booking { position: relative; }
+.btn-booking::after { content: '→'; display: inline-block; margin-left: 10px; transition: transform 0.4s var(--ease); }
+.btn-booking:hover::after { transform: translateX(4px); }
+.btn-booking:active { transform: scale(0.99); }
+
+/* reduced-motion対応 */
+@media (prefers-reduced-motion: reduce) {
+  .hero__slide.is-active { animation: none; }
+  .sd { opacity: 1 !important; transform: none !important; transition: none !important; }
+  .img-reveal img { transform: none !important; transition: none !important; }
+  .btn-booking::after { transition: none; }
+  html { scroll-behavior: auto !important; }
+}
