@@ -17,7 +17,8 @@ export default async function handler(req, res) {
     checkin: body.checkin,
     checkout: body.checkout,
     adults: parseInt(body.adults, 10),
-    children: body.children == null ? 0 : parseInt(body.children, 10),
+    infants: body.infants == null ? 0 : parseInt(body.infants, 10),
+    paymentMethod: body.paymentMethod,
   }, tokyoToday());
   if (!v.ok) {
     res.status(400).json({ error: v.error });
@@ -31,19 +32,24 @@ export default async function handler(req, res) {
       res.status(409).json({ error: 'unavailable' });
       return;
     }
-    const p = computePrice(v.adults, v.nights);
+    const p = computePrice(v.adults, v.nights, {
+      bbq: !!body.bbq, sauna: !!body.sauna, earlyCheckin: !!body.earlyCheckin,
+    }, body.paymentMethod === 'onsite' ? 'onsite' : 'online');
     res.status(200).json({
-      nights: v.nights, adults: v.adults, children: v.children,
-      perNight: p.perNight, subtotal: p.staySubtotal, optionsTotal: 0,
-      total: p.total, taxIncluded: true,
+      nights: v.nights, adults: v.adults, infants: v.infants,
+      perNight: p.perNight, subtotal: p.staySubtotal,
+      optionsOnline: p.optionsOnline, optionsOnsite: p.optionsOnsite,
+      onlineTotal: p.onlineTotal, onsiteAmount: p.onsiteAmount,
+      taxIncluded: true,
     });
   } catch (err) {
     if (err.code === 'not_configured') {
-      const p = computePrice(v.adults, v.nights);
+      const p = computePrice(v.adults, v.nights, {}, 'online');
       res.status(200).json({
-        nights: v.nights, adults: v.adults, children: v.children,
-        perNight: p.perNight, subtotal: p.staySubtotal, optionsTotal: 0,
-        total: p.total, taxIncluded: true, unavailableCheck: 'skipped',
+        nights: v.nights, adults: v.adults, infants: v.infants,
+        perNight: p.perNight, subtotal: p.staySubtotal,
+        optionsOnline: 0, optionsOnsite: 0, onlineTotal: p.onlineTotal, onsiteAmount: 0,
+        taxIncluded: true, unavailableCheck: 'skipped',
       });
       return;
     }

@@ -27,7 +27,7 @@ export default async function handler(req, res) {
       checkout: b.checkout,
       nights: b.nights,
       adults: b.adults,
-      children: b.children,
+      infants: b.infants,
       guestNameMasked: maskName(b.guest_name),
       status: b.status,
       priceJpy: b.price_jpy,

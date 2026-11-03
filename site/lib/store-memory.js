@@ -9,6 +9,7 @@ export function createMemoryStore() {
   const emails = [];     // {booking_id, kind, status, detail, created_at}
   const adminLogs = [];
   let settings = { cancellationPolicyText: '' };
+  const adminUsers = new Map();
   let mutex = Promise.resolve();
 
   function lock(fn) {
@@ -47,7 +48,15 @@ export function createMemoryStore() {
           nights: rec.nights,
           nightsList: eachNight(rec.checkin, rec.checkout),
           adults: rec.adults,
-          children: rec.children || 0,
+          infants: rec.infants || 0,
+          payment_method: rec.payment_method || 'online',
+          options_online: rec.options_online || 0,
+          options_onsite: rec.options_onsite || 0,
+          online_total: rec.online_total || 0,
+          onsite_amount: rec.onsite_amount || 0,
+          refund_id: null,
+          refund_amount: null,
+          thankyou_sent: 'pending',
           guest_name: rec.guest_name,
           guest_kana: rec.guest_kana || '',
           guest_email: rec.guest_email,
@@ -141,6 +150,19 @@ export function createMemoryStore() {
       if (b) b.stripe_session_id = sessionId;
     },
 
+    /* confirmed からのみ遷移させる条件付き更新（二重返金防止の排他点） */
+    async updateBookingIfConfirmed(id, patch) {
+      return lock(() => {
+        const b = bookings.find((x) => x.id === id);
+        if (!b || b.status !== 'confirmed') return null;
+        b.status = patch.status || b.status;
+        if (patch.refund_amount != null) b.refund_amount = patch.refund_amount;
+        if (patch.admin_memo != null) b.admin_memo = patch.admin_memo;
+        b.updated_at = Date.now();
+        return { ...b };
+      });
+    },
+
     async updateBooking(id, patch) {
       return lock(() => {
         const b = bookings.find((x) => x.id === id);
@@ -214,6 +236,22 @@ export function createMemoryStore() {
 
     async emailFailCount(bookingId) {
       return emails.filter((e) => e.booking_id === bookingId && e.status === 'failed').length;
+    },
+
+    async ensureAdminUsers(entries) {
+      return lock(() => {
+        for (const e of entries) {
+          if (!adminUsers.has(e.username)) {
+            adminUsers.set(e.username, { username: e.username, name: e.name, passHash: e.passHash });
+          }
+        }
+        return true;
+      });
+    },
+
+    async getAdminUser(username) {
+      const u = adminUsers.get(username);
+      return u ? { ...u } : null;
     },
 
     async logAdmin(action, detail) {

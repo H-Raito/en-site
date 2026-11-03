@@ -11,7 +11,15 @@ CREATE TABLE IF NOT EXISTS bookings (
   checkout DATE NOT NULL,
   nights INT NOT NULL,
   adults INT NOT NULL,
-  children INT NOT NULL DEFAULT 0,
+  infants INT NOT NULL DEFAULT 0,
+  payment_method TEXT DEFAULT 'online',
+  options_online INT DEFAULT 0,
+  options_onsite INT DEFAULT 0,
+  online_total INT DEFAULT 0,
+  onsite_amount INT DEFAULT 0,
+  refund_id TEXT,
+  refund_amount INT,
+  thankyou_sent TEXT DEFAULT 'pending',
   guest_name TEXT NOT NULL,
   guest_kana TEXT DEFAULT '',
   guest_email TEXT NOT NULL,
@@ -51,6 +59,12 @@ CREATE TABLE IF NOT EXISTS email_log (
   detail TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+CREATE TABLE IF NOT EXISTS admin_users (
+  username TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  pass_hash TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 CREATE TABLE IF NOT EXISTS admin_log (
   id SERIAL PRIMARY KEY,
   action TEXT NOT NULL,
@@ -86,7 +100,7 @@ export function createPgStore(databaseUrl) {
       checkout: r.checkout,
       nights: r.nights,
       adults: r.adults,
-      children: r.children,
+      infants: r.infants,
       guest_name: r.guest_name,
       guest_kana: r.guest_kana,
       guest_email: r.guest_email,
@@ -143,10 +157,11 @@ export function createPgStore(databaseUrl) {
             `INSERT INTO bookings
               (id, request_id, checkin, checkout, nights, adults, children,
                guest_name, guest_kana, guest_email, guest_phone, guest_address,
-               arrival_time, notes, options, price_jpy, price_detail, status, source, expires_at)
-             VALUES ($1,$2,$3::date,$4::date,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,$16,$17::jsonb,'pending_payment',$18, now() + interval '30 minutes')
+               arrival_time, notes, options, price_jpy, price_detail, payment_method, options_online, options_onsite, online_total, onsite_amount, status, source, expires_at)
+             VALUES ($1,$2,$3::date,$4::date,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,$16,$17::jsonb,$18,'pending_payment',$19,$20,$21,$22,$23, now() + interval '30 minutes')
              RETURNING *`,
-            [id, rec.request_id || null, rec.checkin, rec.checkout, rec.nights, rec.adults, rec.children || 0,
+            [id, rec.request_id || null, rec.checkin, rec.checkout, rec.nights, rec.adults, rec.infants || 0,
+              rec.options_online || 0, rec.options_onsite || 0, rec.online_total || 0, rec.onsite_amount || 0,
               rec.guest_name, rec.guest_kana || '', rec.guest_email, rec.guest_phone, rec.guest_address || '',
               rec.arrival_time || '', rec.notes || '', JSON.stringify(rec.options || {}),
               rec.price_jpy, JSON.stringify(rec.price_detail || {}), rec.source || 'web']
@@ -228,6 +243,20 @@ export function createPgStore(databaseUrl) {
     async setStripeSession(id, sessionId) {
       const sql = await db();
       await sql(`UPDATE bookings SET stripe_session_id=$2, updated_at=now() WHERE id=$1`, [id, sessionId]);
+    },
+
+    async updateBookingIfConfirmed(id, patch) {
+      const sql = await db();
+      const rows = await sql(
+        `UPDATE bookings
+         SET status = $2, refund_amount = COALESCE($3, refund_amount),
+             admin_memo = COALESCE($4, admin_memo), updated_at = now()
+         WHERE id = $1 AND status = 'confirmed'
+         RETURNING *`,
+        [id, patch.status || 'refunded', patch.refund_amount != null ? patch.refund_amount : null,
+         patch.admin_memo != null ? patch.admin_memo : null]
+      );
+      return rows[0] ? rowToBooking(rows[0]) : null;
     },
 
     async updateBooking(id, patch) {
@@ -331,6 +360,24 @@ export function createPgStore(databaseUrl) {
     async logAdmin(action, detail) {
       const sql = await db();
       await sql(`INSERT INTO admin_log (action, detail) VALUES ($1, $2::jsonb)`, [action, detail ? JSON.stringify(detail) : null]);
+    },
+
+    async ensureAdminUsers(entries) {
+      const sql = await db();
+      for (const e of entries) {
+        await sql(
+          `INSERT INTO admin_users (username, name, pass_hash) VALUES ($1, $2, $3)
+           ON CONFLICT (username) DO NOTHING`,
+          [e.username, e.name, e.passHash]
+        );
+      }
+      return true;
+    },
+
+    async getAdminUser(username) {
+      const sql = await db();
+      const rows = await sql(`SELECT username, name, pass_hash FROM admin_users WHERE username = $1`, [username]);
+      return rows[0] ? { username: rows[0].username, name: rows[0].name, passHash: rows[0].pass_hash } : null;
     },
 
     async listAdminLogs(limit = 100) {

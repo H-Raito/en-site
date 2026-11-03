@@ -78,6 +78,9 @@ export async function sendBookingEmails(booking) {
     per_night: yen(b.price_detail && b.price_detail.perNight),
     subtotal: yen(b.price_jpy),
     total: yen(b.price_jpy) + (PRICING.taxIncluded ? '（税込）' : ''),
+    online_paid: yen(b.online_total != null ? b.online_total : b.price_jpy) + '（オンライン決済済み）',
+    onsite_due: yen(b.onsite_amount || 0) + '（当日現金支払予定' + (b.options && b.options.earlyCheckin ? '・アーリーチェックインは承認後に確定' : '') + '）',
+    payment_method: b.payment_method === 'onsite' ? '宿泊料のみオンライン決済・オプション現地払い' : '宿泊料とオプションをまとめてオンライン決済',
     checkin_time: '15:00〜22:00',
     checkout_time: '〜12:00',
     facility_address: '京都府福知山市観音寺131-1',
@@ -89,4 +92,21 @@ export async function sendBookingEmails(booking) {
   await wait(1100);
   const owner = await send(cfg, cfg.ownerTemplateId, { ...toOwner, to_email: cfg.ownerEmail || '' });
   return { customer, owner };
+}
+
+
+/* チェックアウト翌日のお礼メール（宣伝色を抑えた自然な一文） */
+export async function sendThankYou(booking) {
+  const cfg = emailConfig();
+  if (!emailConfigured(cfg)) return { ok: false, skipped: true };
+  const params = {
+    to_email: booking.guest_email,
+    guest_name: booking.guest_name,
+    checkin: booking.checkin,
+    checkout: booking.checkout,
+    facility_name: 'EN',
+    facility_tel: '0773-21-6424',
+    facility_address: '京都府福知山市観音寺131-1',
+  };
+  return send(cfg, cfg.thankyouTemplateId || process.env.EMAILJS_TEMPLATE_THANKYOU, params);
 }

@@ -45,7 +45,7 @@ export default async function handler(req, res) {
 function publicView(b) {
   return {
     id: b.id, checkin: b.checkin, checkout: b.checkout, nights: b.nights,
-    adults: b.adults, children: b.children, status: b.status,
+    adults: b.adults, infants: b.infants, status: b.status,
     priceJpy: b.price_jpy, emailStatus: b.email_status,
     guestNameMasked: (b.guest_name || '')[0] ? b.guest_name[0] + '○' : '',
     options: b.options || {},

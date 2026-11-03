@@ -1,6 +1,6 @@
-// 予約作成API。
-// 流れ: 検証 → 決済有効確認 → 空室確保（トランザクション・30分仮押さえ） → Stripe Checkout生成。
-// クライアントが送った金額は一切使わない。金額・泊数はサーバー再計算値を保存する。
+// 予約作成API（2026-11 確定仕様）。
+// 検証 → 決済有効確認 → 期限チェック → 空室確保（30分仮押さえ）→ Stripe Checkout生成。
+// 金額・泊数・人数区分はすべてサーバー再計算。オプションは支払方法に応じて同梱/現地払いを分離。
 import { getStore } from '../lib/store.js';
 import { tokyoToday, parseDate, isValidEmail, isValidPhone, isKana, capStr } from '../lib/util.js';
 import { computePrice, validateBookingInput, PRICING } from '../lib/pricing.js';
@@ -16,13 +16,14 @@ export default async function handler(req, res) {
     return;
   }
 
-  /* 1. 予約条件の検証（サーバー最終防壁） */
+  /* 1. 日程・人数の検証（期限・実人数上限を含むサーバー最終防壁） */
   const v = validateBookingInput({
     checkin: body.checkin,
     checkout: body.checkout,
     adults: parseInt(body.adults, 10),
-    children: body.children == null ? 0 : parseInt(body.children, 10),
-  }, tokyoToday());
+    infants: body.infants == null ? 0 : parseInt(body.infants, 10),
+    paymentMethod: body.paymentMethod,
+  }, tokyoToday(), Date.now());
   if (!v.ok) {
     res.status(400).json({ error: v.error });
     return;
@@ -41,14 +42,16 @@ export default async function handler(req, res) {
   if (!isValidEmail(email)) return fail(res, 'invalid_email');
   if (!isValidPhone(phone)) return fail(res, 'invalid_phone');
 
-  /* 3. オプションは「希望受付」。金額には含めず当日現金払いとして記録する */
+  /* 3. オプション。アーリーチェックインは希望記録のみ（承認制・徴収しない） */
   const options = {
     bbq: !!body.bbq,
     sauna: !!body.sauna,
     earlyCheckin: !!body.earlyCheckin,
   };
+  const paymentMethod = body.paymentMethod === 'onsite' ? 'onsite' : 'online';
+  const price = computePrice(v.adults, v.nights, options, paymentMethod);
 
-  /* 4. 決済が有効か（正式料金承認 + Stripeキー設定済みのときだけ有効化する運用） */
+  /* 4. 決済が有効か（安全装置: BOOKING_PAYMENTS_ENABLED=true + Stripeキー設定時のみ） */
   const paymentsEnabled = process.env.BOOKING_PAYMENTS_ENABLED === 'true' && !!process.env.STRIPE_SECRET_KEY;
   if (!paymentsEnabled) {
     res.status(503).json({ error: 'payments_disabled' });
@@ -58,20 +61,18 @@ export default async function handler(req, res) {
   const store = await getStore();
   await store.expireStale();
 
-  /* 5. リトライ時の冪等: 同一 request_id の未完了予約があれば再利用 */
+  /* 5. 冪等: 同一 request_id の未完了予約は同じCheckout URLを再利用 */
   const requestId = typeof body.request_id === 'string' ? body.request_id.slice(0, 64) : '';
   if (requestId) {
     const existing = await store.getBookingByRequest(requestId);
     if (existing && existing.status === 'pending_payment' && existing.stripe_session_id) {
-      const reuse = await reuseSession(existing.stripe_session_id, existing.id);
+      const reuse = await reuseSession(existing.stripe_session_id);
       if (reuse) {
         res.status(200).json({ bookingId: existing.id, url: reuse, reused: true });
         return;
       }
     }
   }
-
-  const price = computePrice(v.adults, v.nights);
 
   /* 6. 空室確保（トランザクション・30分仮押さえ） */
   let booking;
@@ -82,7 +83,7 @@ export default async function handler(req, res) {
       checkout: body.checkout,
       nights: v.nights,
       adults: v.adults,
-      children: v.children,
+      infants: v.infants,
       guest_name: guestName,
       guest_kana: kana,
       guest_email: email,
@@ -91,8 +92,13 @@ export default async function handler(req, res) {
       arrival_time: arrival,
       notes,
       options,
-      price_jpy: price.total,
-      price_detail: price,
+      payment_method: paymentMethod,
+      options_online: price.optionsOnline,
+      options_onsite: price.optionsOnsite,
+      online_total: price.onlineTotal,
+      onsite_amount: price.onsiteAmount,
+      price_jpy: price.onlineTotal,
+      price_detail: { ...price, adults, nights },
       source: 'web',
     });
   } catch (err) {
@@ -109,7 +115,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  /* 7. Stripe Checkout セッション生成（予約IDを紐付け・30分で失効） */
+  /* 7. Stripe Checkout 生成。決済額 = onlineTotal（onsite選択時は宿泊料のみ） */
   try {
     const { default: Stripe } = await import('stripe');
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -124,10 +130,10 @@ export default async function handler(req, res) {
         quantity: 1,
         price_data: {
           currency: PRICING.currency,
-          unit_amount: price.total,
+          unit_amount: price.onlineTotal,
           product_data: {
-            name: 'EN 宿泊料（' + v.nights + '泊 / 大人' + v.adults + '名' + (v.children ? ' + 乳幼児' + v.children + '名' : '') + '）',
-            description: body.checkin + ' 〜 ' + body.checkout,
+            name: 'EN 宿泊料（' + v.nights + '泊 / 3歳以上' + v.adults + '名' + (v.infants ? ' + 2歳以下' + v.infants + '名' : '') + '）',
+            description: body.checkin + ' 〜 ' + body.checkout + (paymentMethod === 'onsite' ? ' ／ オプションは現地払い' : ''),
           },
         },
       }],
@@ -139,13 +145,12 @@ export default async function handler(req, res) {
     res.status(200).json({ bookingId: booking.id, url: session.url });
   } catch (err) {
     console.error('stripe error:', err);
-    /* 決済ページ生成に失敗したら仮押さえを解除（キャンセル扱い） */
     try { await store.setBookingStatus(booking.id, 'cancelled', { memo: 'stripe session error' }); } catch (e2) {}
     res.status(502).json({ error: 'stripe_error' });
   }
 }
 
-async function reuseSession(sessionId, bookingId) {
+async function reuseSession(sessionId) {
   try {
     const { default: Stripe } = await import('stripe');
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
