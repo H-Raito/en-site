@@ -38,7 +38,8 @@ CREATE TABLE IF NOT EXISTS bookings (
   source TEXT DEFAULT 'web',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  expires_at TIMESTAMPTZ
+  expires_at TIMESTAMPTZ,
+  confirmed_at TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS idx_bookings_stay ON bookings (checkin, checkout);
 CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings (status);
@@ -101,6 +102,7 @@ export function createPgStore(databaseUrl) {
       nights: r.nights,
       adults: r.adults,
       infants: r.infants,
+      confirmed_at: r.confirmed_at ? new Date(r.confirmed_at).getTime() : null,
       guest_name: r.guest_name,
       guest_kana: r.guest_kana,
       guest_email: r.guest_email,
@@ -215,7 +217,7 @@ export function createPgStore(databaseUrl) {
       const sql = await db();
       const rows = await sql(
         `UPDATE bookings
-         SET status='confirmed', payment_intent_id=COALESCE($2, payment_intent_id),
+         SET status='confirmed', confirmed_at=now(), payment_intent_id=COALESCE($2, payment_intent_id),
              expires_at=NULL, updated_at=now()
          WHERE id=$1 AND status='pending_payment'
          RETURNING *`,

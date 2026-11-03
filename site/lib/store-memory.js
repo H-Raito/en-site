@@ -126,6 +126,7 @@ export function createMemoryStore() {
           throw e;
         }
         b.status = 'confirmed';
+        b.confirmed_at = Date.now();
         b.payment_intent_id = paymentIntentId || b.payment_intent_id;
         b.expires_at = null;
         b.updated_at = Date.now();

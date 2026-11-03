@@ -144,18 +144,22 @@ async function routeAction(action, req, res, q, body, username, store) {
         return;
       }
       try {
-        const { default: Stripe } = await import('stripe');
-        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-        const s = await stripe.checkout.sessions.retrieve(b.stripe_session_id);
-        if (!s.payment_intent) throw new Error('no payment_intent');
-        const refund = await stripe.refunds.create(
-          s.payment_intent,
-          { amount: refundAmount },
-          { idempotency_key: 'en_refund_' + b.id }
-        );
-        await store.updateBooking(id, { refund_id: refund.id });
+        let refundId = null;
+        if (refundAmount > 0) {
+          const { default: Stripe } = await import('stripe');
+          const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+          const s = await stripe.checkout.sessions.retrieve(b.stripe_session_id);
+          if (!s.payment_intent) throw new Error('no payment_intent');
+          const refund = await stripe.refunds.create(
+            s.payment_intent,
+            { amount: refundAmount },
+            { idempotency_key: 'en_refund_' + b.id }
+          );
+          refundId = refund.id;
+        }
+        await store.updateBooking(id, { refund_id: refundId });
         await store.logAdmin('booking_refund', { id, amount: refundAmount, tier: calc.tier, by: username });
-        json(res, 200, { ok: true, refund_id: refund.id, amount: refundAmount, tier: calc.tier });
+        json(res, 200, { ok: true, refund_id: refundId, amount: refundAmount, tier: calc.tier });
       } catch (e) {
         /* 返金失敗時は返金済みと表示しない: 状態を confirmed に復帰 */
         await store.setBookingStatus(id, 'confirmed', { memo: '返金失敗のため状態を復帰' });
