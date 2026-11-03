@@ -55,7 +55,7 @@
   <div id="loginView">
     <div class="card">
       <h2>EN 予約管理 ログイン</h2>
-      <div class="row"><div style="flex:1"><label>管理キー（ADMIN_KEY）</label><input type="password" id="key" style="width:100%"></div></div>
+      <div class="row"><div style="flex:1"><label>ユーザー名</label><input id="username" style="width:100%;margin-bottom:12px"><label>パスワード</label><input type="password" id="password" style="width:100%"></div></div>
       <button class="act" id="loginBtn">ログイン</button>
       <p class="msg" id="loginMsg"></p>
     </div>
@@ -73,6 +73,7 @@
         <button data-tab="blocked">受付停止</button>
         <button data-tab="manual">手動予約</button>
         <button data-tab="settings">設定</button>
+        <button data-tab="analytics">売上・分析</button>
       </div>
 
       <div id="tab-bookings">
@@ -139,6 +140,16 @@
         </div>
       </div>
 
+      <div id="tab-analytics" hidden>
+        <div class="card">
+          <div class="toolbar"><button class="act" id="anaPrevY">前年</button><strong id="anaYear"></strong><button class="act" id="anaNextY">翌年</button></div>
+          <div id="anaTotals" class="row" style="gap:24px"></div>
+          <table><thead><tr><th>月</th><th>オンライン売上</th><th>現地支払予定</th><th>予約</th><th>キャンセル</th><th>返金</th><th>手動</th><th>泊数</th><th>稼働率</th></tr></thead><tbody id="anaRows"></tbody></table>
+          <p class="muted">オプション利用: BBQ <span id="anaBbq"></span>件 / サウナ <span id="anaSauna"></span>件 / アーリーIN <span id="anaEarly"></span>件（希望ベース）</p>
+          <p class="muted">※オンライン売上はStripe決済済み分。手動予約は現地精算のため含みません。</p>
+        </div>
+      </div>
+
       <div id="tab-settings" hidden>
         <div class="card">
           <h2>キャンセルポリシー文（予約確認画面に表示）</h2>
@@ -162,7 +173,7 @@
       const qs = new URLSearchParams({ action, ...(params || {}) });
       const opt = body ? {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
         body: JSON.stringify(body),
       } : {};
       const r = await fetch('/api/admin.js?' + qs.toString(), opt);
@@ -178,8 +189,8 @@
     $('loginBtn').addEventListener('click', async () => {
       try {
         const r = await fetch('/api/admin.js?action=login', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key: $('key').value }),
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+          body: JSON.stringify({ username: $('username').value, password: $('password').value }),
         });
         if (r.ok) { showApp(); } else { $('loginMsg').textContent = 'キーが違います'; $('loginMsg').className = 'msg err'; }
       } catch (e) { $('loginMsg').textContent = '接続エラー'; }
@@ -195,6 +206,7 @@
         if (b.dataset.tab === 'calendar') loadCalendar();
         if (b.dataset.tab === 'blocked') loadBlocked();
         if (b.dataset.tab === 'settings') loadSettings();
+        if (b.dataset.tab === 'analytics') loadAnalytics(parseInt($('anaYear').textContent, 10) || new Date().getFullYear());
       });
     });
 
@@ -211,7 +223,7 @@
           tr.innerHTML = '<td>' + b.id + '</td>'
             + '<td><span class="status s-' + b.status + '">' + (STATUS_JA[b.status] || b.status) + '</span></td>'
             + '<td>' + b.checkin + '</td><td>' + b.checkout + '</td><td>' + b.nights + '</td>'
-            + '<td>' + b.adults + (b.children ? '+' + b.children : '') + '</td>'
+            + '<td>' + b.adults + (b.infants ? '+' + b.infants + '児' : '') + '</td>'
             + '<td class="wrap">' + esc(b.guest_name) + '</td>'
             + '<td class="wrap">' + esc(b.guest_email) + '<br>' + esc(b.guest_phone) + '</td>'
             + '<td>¥' + (b.price_jpy || 0).toLocaleString() + '</td>'
@@ -375,3 +387,33 @@
   </script>
 </body>
 </html>
+
+<script>
+/* 売上・分析（後付けスクリプト） */
+(async function () {
+  const y = new Date().getFullYear();
+  document.getElementById('anaYear').textContent = y;
+})();
+async function loadAnalytics(year) {
+  document.getElementById('anaYear').textContent = year;
+  const d = await api('analytics', { year: String(year) });
+  document.getElementById('anaBbq').textContent = d.options.bbq;
+  document.getElementById('anaSauna').textContent = d.options.sauna;
+  document.getElementById('anaEarly').textContent = d.options.earlyCheckin;
+  const t = d.totals;
+  document.getElementById('anaTotals').innerHTML =
+    '<div><label>年間オンライン売上</label><strong>¥' + t.onlineRevenue.toLocaleString() + '</strong></div>' +
+    '<div><label>現地支払予定</label><strong>¥' + t.onsiteDue.toLocaleString() + '</strong></div>' +
+    '<div><label>予約数</label><strong>' + t.bookings + '</strong></div>' +
+    '<div><label>キャンセル</label><strong>' + t.cancellations + '</strong></div>' +
+    '<div><label>返金</label><strong>' + t.refunded + '</strong></div>' +
+    '<div><label>手動予約</label><strong>' + t.manual + '</strong></div>' +
+    '<div><label>平均宿泊人数</label><strong>' + t.avgGuests + '名</strong></div>';
+  const tb = document.getElementById('anaRows');
+  tb.innerHTML = d.months.map(function (m) {
+    return '<tr><td>' + m.month + '月</td><td>¥' + m.onlineRevenue.toLocaleString() + '</td><td>¥' + m.onsiteDue.toLocaleString() + '</td><td>' + m.bookings + '</td><td>' + m.cancellations + '</td><td>' + m.refunded + '</td><td>' + m.manual + '</td><td>' + m.nights + '</td><td>' + m.occupancy + '%</td></tr>';
+  }).join('');
+}
+document.getElementById('anaPrevY').addEventListener('click', function () { loadAnalytics(parseInt(document.getElementById('anaYear').textContent, 10) - 1); });
+document.getElementById('anaNextY').addEventListener('click', function () { loadAnalytics(parseInt(document.getElementById('anaYear').textContent, 10) + 1); });
+</script>
