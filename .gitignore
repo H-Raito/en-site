@@ -12,7 +12,10 @@ node_modules/
 .playwright-mcp/
 .superpowers/
 audit/
-docs/
+docs/*
+!docs/en
+docs/en/*
+!docs/en/*.md
 prisma/
 public/
 src/
