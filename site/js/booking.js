@@ -200,7 +200,7 @@ export function initBooking() {
 
   function rebuildChildrenOptions() {
     const adults = parseInt(adultsEl.value, 10) || 0;
-    const maxChildren = Math.min(PRICING.maxChildren, Math.max(0, PRICING.maxGuests - adults));
+    const maxChildren = PRICING.maxInfants != null ? PRICING.maxInfants : 5;
     const current = parseInt(childrenEl.value, 10) || 0;
     const target = Math.min(current, maxChildren);
     let html = '';
