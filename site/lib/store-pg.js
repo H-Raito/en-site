@@ -81,7 +81,7 @@ export function createPgStore(databaseUrl) {
   async function db() {
     if (!sql) {
       const mod = await import('@neondatabase/serverless');
-      sql = neon(databaseUrl);
+      sql = mod.neon(databaseUrl);
     }
     if (!ready) {
       /* Neon のHTTPドライバは複数文の一括実行が不可のため、1文ずつ実行する */
