@@ -94,13 +94,18 @@
       <div id="tab-calendar" hidden>
         <div class="card">
           <div class="toolbar">
-            <button class="act" id="calPrevY">前年</button>
-            <strong id="calYear"></strong>
-            <button class="act" id="calNextY">翌年</button>
-            <span class="muted">濃い背景=宿泊（予約）／斜線=受付停止</span>
+            <button class="act" id="calPrevM">‹ 前月</button>
+            <strong id="calMonthLabel" style="font-size:16px"></strong>
+            <button class="act" id="calNextM">翌月 ›</button>
+            <button class="act" id="calToday">今月</button>
           </div>
-          <div id="yearCal"></div>
-  </div>
+          <div class="grid2" id="monthCal"></div>
+          <p class="muted" style="margin-top:10px">濃い背景=宿泊（セルをクリックで詳細）／斜線=受付停止</p>
+        </div>
+        <div class="card" id="dayDetail" hidden>
+          <h2>日程の予約詳細</h2>
+          <div id="dayDetailBody"></div>
+        </div>
       </div>
 
       <div id="tab-blocked" hidden>
@@ -298,35 +303,91 @@
     $('searchBtn').addEventListener('click', loadBookings);
     $('filterStatus').addEventListener('change', loadBookings);
 
+    let calY = new Date().getFullYear();
+    let calM = new Date().getMonth() + 1;
+    let calData = { bookings: [], blocked: [] };
+
     async function loadCalendar() {
-      const y = parseInt($('calYear').textContent, 10) || new Date().getFullYear();
-      const d = await api('calendar', { year: y });
+      calData = await api('calendar', { year: String(calY) });
+      renderMonth();
+    }
+
+    function renderMonth() {
+      document.getElementById('calMonthLabel').textContent = calY + '年 ' + calM + '月';
+      const pad = (n) => String(n).padStart(2, '0');
       const today = new Date().toISOString().slice(0, 10);
-      const bookedMap = {};
-      d.bookings.forEach((b) => {
-        if (b.status === 'confirmed' || b.status === 'pending_payment') {
-          bookedMap[b.checkin] = (bookedMap[b.checkin] || '') + 'in/' + b.guest_name.slice(0, 4) + ' ';
-          bookedMap[b.checkout] = (bookedMap[b.checkout] || '') + 'out ';
+      const bookedByDate = {};
+      calData.bookings.forEach(function (b) {
+        if (b.status === 'confirmed' || b.status === 'pending_payment' || b.source === 'manual') {
+          (bookedByDate[b.checkin] = bookedByDate[b.checkin] || []).push(b);
+          (bookedByDate[b.checkout] = bookedByDate[b.checkout] || []).push(b);
         }
       });
-      const blockedSet = new Set(d.blocked.map((x) => x.date));
+      const blockedSet = new Set(calData.blocked.map(function (x) { return x.date; }));
+      const STATUS_JA2 = { confirmed: '確定', pending_payment: '決済待ち', manual: '手動' };
       let html = '';
-      for (let m = 1; m <= 12; m++) {
-        html += '<div class="card"><h2>' + y + '年 ' + m + '月</h2><div class="grid2">';
-        const first = new Date(y, m - 1, 1);
-        for (let i = 0; i < first.getDay(); i++) html += '<div class="calcell"></div>';
-        const dim = new Date(y, m, 0).getDate();
-        for (let day = 1; day <= dim; day++) {
-          const ds = y + '-' + String(m).padStart(2, '0') + '-' + String(day).padStart(2, '0');
-          const cls = 'calcell' + (bookedMap[ds] ? ' booked' : '') + (blockedSet.has(ds) ? ' blocked' : '') + (ds < today ? ' past' : '');
-          const tag = blockedSet.has(ds) ? '停止' : (bookedMap[ds] || '');
-          html += '<div class="' + cls + '"><div class="d">' + day + '</div><div>' + tag + '</div></div>';
-        }
-        html += '</div></div>';
+      const first = new Date(calY, calM - 1, 1);
+      for (let i = 0; i < first.getDay(); i++) html += '<div class="calcell"></div>';
+      const dim = new Date(calY, calM, 0).getDate();
+      for (let day = 1; day <= dim; day++) {
+        const ds = calY + '-' + pad(calM) + '-' + pad(day);
+        const entries = bookedByDate[ds] || [];
+        const isBlocked = blockedSet.has(ds);
+        const cls = 'calcell' + (entries.length ? ' booked' : '') + (isBlocked ? ' blocked' : '') + (ds < today ? ' past' : '');
+        let inner = '<div class="d">' + day + '</div>';
+        entries.forEach(function (b) {
+          inner += '<div style="font-size:10px">' + (b.checkin === ds ? 'IN ' : 'OUT ') + esc(String(b.guest_name || '').slice(0, 6)) + '</div>';
+        });
+        if (isBlocked && !entries.length) inner += '<div style="font-size:10px">停止</div>';
+        html += '<div class="' + cls + '"' + (entries.length || isBlocked ? ' data-date="' + ds + '" style="cursor:pointer"' : '') + '>' + inner + '</div>';
       }
-      $('yearCal').innerHTML = html;
+      document.getElementById('monthCal').innerHTML = html;
+      document.getElementById('monthCal').querySelectorAll('.calcell[data-date]').forEach(function (cell) {
+        cell.addEventListener('click', function () { showDay(cell.dataset.date); });
+      });
     }
-    $('calPrevY').addEventListener('click', () => { $('calYear').textContent = parseInt($('calYear').textContent, 10) - 1; loadCalendar(); });
+
+    function showDay(ds) {
+      const list = calData.bookings.filter(function (b) {
+        return b.checkin <= ds && b.checkout > ds;
+      });
+      const body = document.getElementById('dayDetailBody');
+      if (!list.length) {
+        body.innerHTML = '<p class="muted">' + ds + ' の予約はありません' + (calData.blocked.some(function (x) { return x.date === ds; }) ? '（受付停止日）' : '') + '</p>';
+        document.getElementById('dayDetail').hidden = false;
+        document.getElementById('dayDetail').dataset.for = ds;
+        return;
+      }
+      let html = '<table><thead><tr><th>予約番号</th><th>状態</th><th>日程</th><th>お名前</th><th>メール</th><th>電話</th><th>操作</th></tr></thead><tbody>';
+      list.forEach(function (b) {
+        html += '<tr><td>' + b.id + '</td><td>' + (STATUS_JA[b.status] || b.status) + '</td><td>' + b.checkin + '〜' + b.checkout + '</td><td>' + esc(b.guest_name) + '</td><td>' + esc(b.guest_email) + '</td><td>' + esc(b.guest_phone) + '</td><td><button class="act" data-a="detail" data-id="' + b.id + '">詳細</button></td></tr>';
+      });
+      html += '</tbody></table>';
+      body.innerHTML = html;
+      document.getElementById('dayDetail').hidden = false;
+      body.querySelectorAll('button[data-a="detail"]').forEach(function (btn) {
+        btn.addEventListener('click', function () { rowAction('detail', btn.dataset.id); });
+      });
+    }
+
+    function shiftMonth(n) {
+      calM += n;
+      if (calM < 1) { calM = 12; calY--; }
+      if (calM > 12) { calM = 1; calY++; }
+      document.getElementById('dayDetail').hidden = true;
+      loadCalendar();
+    }
+    document.getElementById('calPrevM').addEventListener('click', function () { shiftMonth(-1); });
+    document.getElementById('calNextM').addEventListener('click', function () { shiftMonth(1); });
+    document.getElementById('calToday').addEventListener('click', function () {
+      calY = new Date().getFullYear();
+      calM = new Date().getMonth() + 1;
+      document.getElementById('dayDetail').hidden = true;
+      loadCalendar();
+    });
+
+    /* 旧ハンドラの無効化（削除済み関数参照の回避） */
+    void calY; void calM;
     $('calNextY').addEventListener('click', () => { $('calYear').textContent = parseInt($('calYear').textContent, 10) + 1; loadCalendar(); });
 
     async function loadBlocked() {
