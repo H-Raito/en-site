@@ -49,7 +49,39 @@
     .muted { color: #9B8E82; font-size: 12px; }
     .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
     textarea { width: 100%; }
-  </style>
+  
+/* ---- スマートフォン対応 ---- */
+@media (max-width: 720px) {
+  main { padding: 12px; }
+  header { padding: 10px 14px; }
+  header h1 { font-size: 14px; }
+  .card { padding: 14px; margin-bottom: 14px; }
+  .tabs { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding-bottom: 4px; }
+  .tabs button { flex: 0 0 auto; padding: 10px 14px; }
+  .toolbar input, .toolbar select { flex: 1 1 130px; width: auto !important; }
+  button.act { padding: 9px 12px; }
+  /* テーブルをカード型レイアウトに */
+  .card table, .card tbody, .card tr, .card td { display: block; }
+  .card thead { display: none; }
+  .card tr { background: #FBF9F5; border: 1px solid #E4DCD2; margin-bottom: 10px; padding: 10px; }
+  .card td { border: none; padding: 2px 0; white-space: normal; }
+  .card td::before { content: attr(data-label); display: inline-block; min-width: 96px; margin-right: 8px; color: #9B8E82; font-size: 11px; letter-spacing: 0.04em; vertical-align: top; }
+  /* カレンダーをコンパクトに */
+  .grid2 { gap: 2px; }
+  .calcell { min-height: 56px; padding: 3px; }
+  .calcell .d { font-size: 10px; color: #9B8E82; }
+  .calcell div { font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; }
+  .row > div { flex: 1 1 140px; }
+  .row input, .row select { width: 100% !important; }
+  textarea { width: 100% !important; }
+  .flow-card__list, .anaTotals { }
+}
+@media (max-width: 720px) {
+  #anaTotals { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  #anaTotals label { display: block; font-size: 10px; color: #9B8E82; }
+}
+</style>
 </head>
 <body>
   <div id="loginView">
@@ -238,14 +270,14 @@
         d.bookings.forEach((b) => {
           const tr = document.createElement('tr');
           const dt = new Date(b.created_at || 0);
-          tr.innerHTML = '<td>' + b.id + '</td>'
-            + '<td><span class="status s-' + b.status + '">' + (STATUS_JA[b.status] || b.status) + '</span></td>'
-            + '<td>' + b.checkin + '</td><td>' + b.checkout + '</td><td>' + b.nights + '</td>'
-            + '<td>' + b.adults + (b.infants ? '+' + b.infants + '児' : '') + '</td>'
-            + '<td class="wrap">' + esc(b.guest_name) + '</td>'
-            + '<td class="wrap">' + esc(b.guest_email) + '<br>' + esc(b.guest_phone) + '</td>'
-            + '<td>¥' + (b.price_jpy || 0).toLocaleString() + '</td>'
-            + '<td>' + (b.email_status || '') + '</td>'
+          tr.innerHTML = '<td data-label="予約番号">' + b.id + '</td>'
+            + '<td data-label="状態"><span class="status s-' + b.status + '">' + (STATUS_JA[b.status] || b.status) + '</span></td>'
+            + '<td data-label="チェックイン">' + b.checkin + '</td><td data-label="チェックアウト">' + b.checkout + '</td><td data-label="泊数">' + b.nights + '</td>'
+            + '<td data-label="人数">' + b.adults + (b.infants ? '+' + b.infants + '児' : '') + '</td>'
+            + '<td class="wrap" data-label="お名前">' + esc(b.guest_name) + '</td>'
+            + '<td class="wrap" data-label="連絡先">' + esc(b.guest_email) + '<br>' + esc(b.guest_phone) + '</td>'
+            + '<td data-label="金額">¥' + (b.price_jpy || 0).toLocaleString() + '</td>'
+            + '<td data-label="メール">' + (b.email_status || '') + '</td>'
             + '<td>'
             + '<button class="act" data-a="detail" data-id="' + b.id + '">詳細</button>'
             + (b.status === 'confirmed' ? '<button class="act" data-a="cancel" data-id="' + b.id + '">キャンセル</button>' : '')
@@ -360,7 +392,7 @@
       }
       let html = '<table><thead><tr><th>予約番号</th><th>状態</th><th>日程</th><th>お名前</th><th>メール</th><th>電話</th><th>操作</th></tr></thead><tbody>';
       list.forEach(function (b) {
-        html += '<tr><td>' + b.id + '</td><td>' + (STATUS_JA[b.status] || b.status) + '</td><td>' + b.checkin + '〜' + b.checkout + '</td><td>' + esc(b.guest_name) + '</td><td>' + esc(b.guest_email) + '</td><td>' + esc(b.guest_phone) + '</td><td><button class="act" data-a="detail" data-id="' + b.id + '">詳細</button></td></tr>';
+        html += '<tr><td data-label="予約番号">' + b.id + '</td><td data-label="状態">' + (STATUS_JA[b.status] || b.status) + '</td><td data-label="日程">' + b.checkin + '〜' + b.checkout + '</td><td data-label="お名前">' + esc(b.guest_name) + '</td><td data-label="メール">' + esc(b.guest_email) + '</td><td data-label="電話">' + esc(b.guest_phone) + '</td><td data-label="操作"><button class="act" data-a="detail" data-id="' + b.id + '">詳細</button></td></tr>';
       });
       html += '</tbody></table>';
       body.innerHTML = html;
@@ -396,7 +428,7 @@
       tb.innerHTML = '';
       d.blocked.forEach((x) => {
         const tr = document.createElement('tr');
-        tr.innerHTML = '<td>' + x.date + '</td><td>' + esc(x.reason || '') + '</td><td><button class="act" data-d="' + x.date + '">解除</button></td>';
+        tr.innerHTML = '<td data-label="日付">' + x.date + '</td><td data-label="理由">' + esc(x.reason || '') + '</td><td data-label="操作"><button class="act" data-d="' + x.date + '">解除</button></td>';
         tb.appendChild(tr);
       });
       tb.querySelectorAll('button').forEach((b) => {
@@ -426,7 +458,7 @@
       tb.innerHTML = '';
       logs.logs.forEach((l) => {
         const tr = document.createElement('tr');
-        tr.innerHTML = '<td>' + new Date(l.created_at).toLocaleString('ja-JP') + '</td><td>' + esc(l.action) + '</td><td>' + esc(JSON.stringify(l.detail || '')) + '</td>';
+        tr.innerHTML = '<td data-label="日時">' + new Date(l.created_at).toLocaleString('ja-JP') + '</td><td data-label="操作">' + esc(l.action) + '</td><td data-label="詳細">' + esc(JSON.stringify(l.detail || '')) + '</td>';
         tb.appendChild(tr);
       });
     }
@@ -485,7 +517,7 @@ async function loadAnalytics(year) {
     '<div><label>平均宿泊人数</label><strong>' + t.avgGuests + '名</strong></div>';
   const tb = document.getElementById('anaRows');
   tb.innerHTML = d.months.map(function (m) {
-    return '<tr><td>' + m.month + '月</td><td>¥' + m.onlineRevenue.toLocaleString() + '</td><td>¥' + m.onsiteDue.toLocaleString() + '</td><td>' + m.bookings + '</td><td>' + m.cancellations + '</td><td>' + m.refunded + '</td><td>' + m.manual + '</td><td>' + m.nights + '</td><td>' + m.occupancy + '%</td></tr>';
+    return '<tr><td data-label="月">' + m.month + '月</td><td data-label="オンライン売上">¥' + m.onlineRevenue.toLocaleString() + '</td><td data-label="現地支払予定">¥' + m.onsiteDue.toLocaleString() + '</td><td data-label="予約">' + m.bookings + '</td><td data-label="キャンセル">' + m.cancellations + '</td><td data-label="返金">' + m.refunded + '</td><td data-label="手動">' + m.manual + '</td><td data-label="泊数">' + m.nights + '</td><td data-label="稼働率">' + m.occupancy + '%</td></tr>';
   }).join('');
 }
 document.getElementById('anaPrevY').addEventListener('click', function () { loadAnalytics(parseInt(document.getElementById('anaYear').textContent, 10) - 1); });
