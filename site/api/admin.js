@@ -24,7 +24,7 @@ export default async function handler(req, res) {
   /* ---- ログイン ---- */
   if (action === 'login') {
     if (!adminEnabled()) {
-      json(res, 503, { error: 'admin not configured' });
+      json(res, 503, { error: 'admin_not_configured' });
       return;
     }
     const username = capStr(String((body && body.username) || q.get('username') || ''), 40);
@@ -35,6 +35,15 @@ export default async function handler(req, res) {
     }
     if (loginBlocked(username)) {
       json(res, 429, { error: 'too_many_attempts' });
+      return;
+    }
+    /* ADMIN_SEED の設定状態を事前検証（形式ミス・未設定を明示する） */
+    if (!process.env.ADMIN_SEED) {
+      json(res, 503, { error: 'seed_missing' });
+      return;
+    }
+    if (adminSeedEntries().length === 0) {
+      json(res, 503, { error: 'seed_invalid' });
       return;
     }
     try {
@@ -48,7 +57,7 @@ export default async function handler(req, res) {
       if (!user || !verifyPassword(password, user.passHash)) {
         recordLoginFailure(username);
         await store.logAdmin('login_failed', { username });
-        json(res, 401, { error: 'unauthorized' });
+        json(res, 401, { error: 'invalid_credentials' });
         return;
       }
       clearLoginFailures(username);

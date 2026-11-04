@@ -192,7 +192,19 @@
           method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
           body: JSON.stringify({ username: $('username').value, password: $('password').value }),
         });
-        if (r.ok) { showApp(); } else { $('loginMsg').textContent = 'キーが違います'; $('loginMsg').className = 'msg err'; }
+        if (r.ok) { showApp(); } else {
+          const d = await r.json().catch(() => ({}));
+          const msgs = {
+            invalid_credentials: 'ユーザー名またはパスワードが違います',
+            seed_invalid: 'ADMIN_SEEDの形式エラー:「表示名:ユーザー名:パスワード」を半角コロンと半角カンマで区切って設定してください（全角コロン不可）',
+            admin_not_configured: 'ADMIN_KEYが未設定です（Vercel環境変数を確認）',
+            seed_missing: 'ADMIN_SEEDが未設定です（Vercel環境変数に設定してRedeployしてください）',
+            not_configured: 'DATABASE_URLが未設定です（Neonの接続文字列をVercel環境変数に設定してRedeployしてください）',
+          };
+          $('loginMsg').textContent = r.status === 429 ? '試行回数が制限されました。15分後に再試行してください'
+            : (msgs[d.error] || ('ログインエラー(HTTP ' + r.status + ')'));
+          $('loginMsg').className = 'msg err';
+        }
       } catch (e) { $('loginMsg').textContent = '接続エラー'; }
     });
     $('logoutBtn').addEventListener('click', () => { document.cookie = 'en_admin=; Max-Age=0; Path=/'; showLogin(); });
