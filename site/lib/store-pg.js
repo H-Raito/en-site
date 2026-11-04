@@ -84,7 +84,11 @@ export function createPgStore(databaseUrl) {
       sql = neon(databaseUrl);
     }
     if (!ready) {
-      ready = sql(SCHEMA);
+      /* Neon のHTTPドライバは複数文の一括実行が不可のため、1文ずつ実行する */
+      const stmts = SCHEMA.split(';').map((x) => x.trim()).filter(Boolean);
+      ready = (async () => {
+        for (const stmt of stmts) await sql(stmt);
+      })();
       ready.catch(() => { ready = null; });
     }
     await ready;

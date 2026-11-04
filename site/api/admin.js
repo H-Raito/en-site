@@ -70,7 +70,10 @@ export default async function handler(req, res) {
         json(res, 503, { error: 'not_configured' });
         return;
       }
-      throw err;
+      /* セットアップ中のDBエラーは原因を画面に見せる（本番運用時は削除可） */
+      console.error('login db error:', err);
+      json(res, 502, { error: 'db_setup_failed', detail: String(err.message || err).slice(0, 160) });
+      return;
     }
     return;
   }

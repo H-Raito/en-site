@@ -200,9 +200,10 @@
             admin_not_configured: 'ADMIN_KEYが未設定です（Vercel環境変数を確認）',
             seed_missing: 'ADMIN_SEEDが未設定です（Vercel環境変数に設定してRedeployしてください）',
             not_configured: 'DATABASE_URLが未設定です（Neonの接続文字列をVercel環境変数に設定してRedeployしてください）',
+            db_setup_failed: 'データベース接続・初期化エラー:',
           };
           $('loginMsg').textContent = r.status === 429 ? '試行回数が制限されました。15分後に再試行してください'
-            : (msgs[d.error] || ('ログインエラー(HTTP ' + r.status + ')'));
+            : (msgs[d.error] ? (msgs[d.error] + (d.detail ? '（' + d.detail + '）' : '')) : ('ログインエラー(HTTP ' + r.status + ')'));
           $('loginMsg').className = 'msg err';
         }
       } catch (e) { $('loginMsg').textContent = '接続エラー'; }
