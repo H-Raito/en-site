@@ -61,10 +61,11 @@ export default async function handler(req, res) {
         return;
       }
       clearLoginFailures(username);
+      const token = issueToken(username);
+      /* ヘッダはレスポンス送信前に設定する（json()の後では無効になる） */
+      res.setHeader('Set-Cookie', 'en_admin=' + token + '; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=28800');
       json(res, 200, { ok: true, username: user.username, name: user.name });
       await store.logAdmin('login_success', { username });
-      const token = issueToken(username);
-      res.setHeader('Set-Cookie', 'en_admin=' + token + '; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=28800');
     } catch (err) {
       if (err.code === 'not_configured') {
         json(res, 503, { error: 'not_configured' });
