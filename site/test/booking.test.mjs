@@ -120,25 +120,31 @@ test('validate: 過去日・同日・逆転・上限泊数・人数', async () =
   assert.equal(ok2.ok, true);
 });
 
-test('cutoff: チェックイン3日前の15:00境界（日本時間）', async () => {
+test('cutoff: 当日予約可（チェックイン当日の15:00境界・日本時間）', async () => {
   const { validateBookingInput, isPastCutoff } = await import('../lib/pricing.js');
-  /* チェックイン 2026-11-04 → 期限は 2026-11-01 15:00 JST = 2026-11-01T06:00Z */
-  const deadline = Date.UTC(2026, 10, 1, 6, 0, 0);
-  const before = validateBookingInput(
+  /* チェックイン当日 2026-11-04 → 期限は当日 15:00 JST = 2026-11-04T06:00Z */
+  const deadline = Date.UTC(2026, 10, 4, 6, 0, 0);
+  const sameDayBefore = validateBookingInput(
     { checkin: '2026-11-04', checkout: '2026-11-05', adults: 2 },
-    '2026-11-01', deadline - 1
+    '2026-11-04', deadline - 1
   );
-  assert.equal(before.ok, true);
-  const at = validateBookingInput(
+  assert.equal(sameDayBefore.ok, true);
+  const sameDayAt = validateBookingInput(
     { checkin: '2026-11-04', checkout: '2026-11-05', adults: 2 },
-    '2026-11-01', deadline
+    '2026-11-04', deadline
   );
-  assert.equal(at.ok, true); /* 「まで」は含む */
-  const after = validateBookingInput(
+  assert.equal(sameDayAt.ok, true); /* 「まで」は含む */
+  const sameDayAfter = validateBookingInput(
     { checkin: '2026-11-04', checkout: '2026-11-05', adults: 2 },
-    '2026-11-01', deadline + 1
+    '2026-11-04', deadline + 1
   );
-  assert.equal(after.error, 'booking_closed');
+  assert.equal(sameDayAfter.error, 'booking_closed');
+  /* 翌日以降のチェックインは15:00を過ぎても受付可 */
+  const tomorrow = validateBookingInput(
+    { checkin: '2026-11-05', checkout: '2026-11-06', adults: 2 },
+    '2026-11-04', deadline + 3600000
+  );
+  assert.equal(tomorrow.ok, true);
   assert.equal(isPastCutoff('bad', deadline), true);
 });
 

@@ -101,11 +101,11 @@ export function initBooking() {
     return bookedNights.has(s) || blockedDates.has(s) || isBeforeCutoff(s);
   }
 
-  /* 予約受付期限（チェックイン3日前の15:00・日本時間）を過ぎた日は選択不可 */
+  /* 当日予約可（チェックイン当日の15:00まで選択可・日本時間。サーバーが最終判定） */
   function isBeforeCutoff(s) {
-    /* s + 3日 の 15:00 JST がまだ来ていない夜は受付不可（日単位の近似・サーバーが最終判定） */
-    const limit = addDays(todayStr, 2);
-    return s <= limit;
+    const jst = new Date(Date.now() + 9 * 3600000);
+    const pastCutoffTime = (jst.getUTCHours() * 60 + jst.getUTCMinutes()) >= 15 * 60;
+    return s < todayStr || (s === todayStr && pastCutoffTime);
   }
   function rangeHasBlocked(a, b) {
     /* [a, b) の各夜が空いているか */

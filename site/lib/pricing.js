@@ -11,7 +11,7 @@ export const PRICING = {
   maxInfants: 5,               // 2歳以下（無料・寝具アメニティなし）の受付上限
   minNights: 1,
   maxNights: 27,             /* 28泊以上は長期宿泊規約が未確定のため受付不可 */
-  bookingCutoffDays: 3,        // 予約受付期限: チェックイン3日前の15:00まで
+  bookingCutoffDays: 0,        // 当日予約可: チェックイン当日の15:00まで受付
   options: {
     bbq: 2000,                 // 1予約につき（泊数倍しない）
     sauna: 2000,               // 1予約につき
@@ -70,7 +70,7 @@ export function validateBookingInput(input, todayStr, nowMs = Date.now()) {
   if (nights < PRICING.minNights) return { ok: false, error: 'invalid_stay' };
   if (nights > PRICING.maxNights) return { ok: false, error: 'too_long_stay' };
 
-  /* 予約受付期限: チェックイン3日前の15:00（日本時間）まで */
+  /* 予約受付期限: 当日予約可（チェックイン当日の15:00・日本時間まで） */
   if (isPastCutoff(ci, nowMs)) return { ok: false, error: 'booking_closed' };
 
   const adults = Number(input.adults);
@@ -84,7 +84,7 @@ export function validateBookingInput(input, todayStr, nowMs = Date.now()) {
   return { ok: true, nights, adults, infants };
 }
 
-/* チェックイン日 D の 15:00 JST = UTC 06:00。期限 = D-3日の15:00 JST。期限を過ぎたら true */
+/* チェックイン日 D の 15:00 JST = UTC 06:00 が期限。当日の 15:00 を過ぎたらその日は受付不可 */
 export function isPastCutoff(checkin, nowMs = Date.now()) {
   const p = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(checkin || ''));
   if (!p) return true;
