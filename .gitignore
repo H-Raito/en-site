@@ -34,3 +34,6 @@ image/
 /tailwind.config.ts
 /tsconfig.json
 /README.md
+.vercel
+.env*
+.env.vercel
