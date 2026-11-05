@@ -6,5 +6,8 @@
   "dependencies": {
     "stripe": "^22.3.2",
     "@neondatabase/serverless": "^1.0.0"
+  },
+  "scripts": {
+    "test": "node --test test/"
   }
 }

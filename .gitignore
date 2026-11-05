@@ -33,7 +33,6 @@ image/
 /postcss.config.mjs
 /tailwind.config.ts
 /tsconfig.json
-/README.md
 .vercel
 .env*
 .env.vercel
