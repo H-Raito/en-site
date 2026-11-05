@@ -581,3 +581,39 @@ test('email: 未設定時はskippedを返す（実通信なし）', async () => 
   assert.equal(r.customer.skipped, true);
   assert.equal(r.owner.skipped, true);
 });
+
+test('store-pg: 全INSERT文の列数と値の数が一致（本番Neonで発生した42601の回帰防止）', async () => {
+  const fs = await import('node:fs');
+  const src = fs.readFileSync(new URL('../lib/store-pg.js', import.meta.url), 'utf8');
+  /* 文字列リテラル・関数呼び出しの括弧を深度考慮してトップレベルの要素数を数える */
+  function countExprs(s) {
+    let depth = 0, inStr = null, count = 1;
+    for (let i = 0; i < s.length; i++) {
+      const c = s[i];
+      if (inStr) { if (c === inStr) inStr = null; continue; }
+      if (c === "'") { inStr = c; continue; }
+      if (c === '(') depth++;
+      else if (c === ')') { depth--; if (depth < 0) return count; }
+      else if (c === ',' && depth === 0) count++;
+    }
+    return count;
+  }
+  /* INSERT INTO <table> (cols) VALUES (...) を抽出して突き合わせる */
+  const re = /INSERT INTO\s+(\w+)\s*\(([^)]+)\)\s*VALUES/g;
+  let m, checked = 0;
+  while ((m = re.exec(src)) !== null) {
+    const cols = m[2].split(',').map((x) => x.trim()).filter(Boolean);
+    /* VALUES の括弧対応を正しく閉じるまで走査 */
+    let i = re.lastIndex;
+    while (src[i] !== '(') i++;
+    let depth = 0, j = i;
+    for (; j < src.length; j++) {
+      if (src[j] === '(') depth++;
+      else if (src[j] === ')') { depth--; if (depth === 0) break; }
+    }
+    const vals = countExprs(src.slice(i + 1, j));
+    assert.equal(vals, cols.length, m[1] + ' のINSERT: 列数=' + cols.length + ' 値の数=' + vals);
+    checked++;
+  }
+  assert.ok(checked >= 3, 'INSERT文が ' + checked + ' 件検出された（store-pg.js全体を対象）');
+});

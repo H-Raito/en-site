@@ -196,7 +196,7 @@ export function createPgStore(databaseUrl) {
              payment_method, options_online, options_onsite, online_total, onsite_amount,
              status, source, expires_at)
            VALUES ($1,$2,$3::date,$4::date,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,$16,$17::jsonb,
-             $18,'pending_payment',$19,$20,$21,$22, now() + interval '30 minutes')
+             $18,$19,$20,$21,$22,'pending_payment',$23, now() + interval '30 minutes')
            RETURNING *`,
           [id, rec.request_id || null, rec.checkin, rec.checkout, rec.nights, rec.adults, rec.infants || 0,
             rec.guest_name, rec.guest_kana || '', rec.guest_email, rec.guest_phone, rec.guest_address || '',
