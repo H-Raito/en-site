@@ -214,6 +214,18 @@ async function routeAction(action, req, res, q, body, username, store) {
       json(res, 200, { ok: true });
       return;
     }
+    case 'booking.mark-paid': {
+      const id = q.get('id') || '';
+      const b = await store.getBooking(id);
+      if (!b) { json(res, 404, { error: 'not_found' }); return; }
+      if (b.status !== 'confirmed') { json(res, 400, { error: 'invalid booking' }); return; }
+      /* 冪等: すでに記録済みなら 409（2回押しても二重計上されない） */
+      const updated = await store.markBookingPaid(id, '入金記録(' + username + ')');
+      if (!updated) { json(res, 409, { error: 'already_processed' }); return; }
+      await store.logAdmin('booking_paid', { id, amount: b.onsite_amount || 0, by: username });
+      json(res, 200, { ok: true, booking: updated });
+      return;
+    }
     case 'booking.manual': {
       const v = validateBookingInput({
         checkin: body.checkin, checkout: body.checkout,
@@ -291,7 +303,7 @@ async function routeAction(action, req, res, q, body, username, store) {
       const list = await store.listBookings({});
       const months = [];
       for (let m = 1; m <= 12; m++) {
-        months.push({ month: m, onlineRevenue: 0, onsiteDue: 0, bookings: 0, cancellations: 0, refunded: 0, guests: 0, nights: 0, manual: 0 });
+        months.push({ month: m, onlineRevenue: 0, onsiteDue: 0, paidRevenue: 0, bookings: 0, cancellations: 0, refunded: 0, guests: 0, nights: 0, manual: 0 });
       }
       let optionBbq = 0, optionSauna = 0, optionEarly = 0;
       for (const b of list) {
@@ -307,6 +319,8 @@ async function routeAction(action, req, res, q, body, username, store) {
           if (b.source === 'manual') {
             slot.manual++;
             slot.onsiteDue += b.onsite_amount || 0;
+            /* 入金記録済みの手動予約は売上（入金済み）に計上 */
+            if (b.paid_at) slot.paidRevenue += b.onsite_amount || 0;
           } else {
             slot.onlineRevenue += b.online_total || b.price_jpy || 0;
             slot.onsiteDue += b.onsite_amount || 0;
@@ -331,6 +345,8 @@ async function routeAction(action, req, res, q, body, username, store) {
         totals: {
           onlineRevenue: months.reduce((a, x) => a + x.onlineRevenue, 0),
           onsiteDue: months.reduce((a, x) => a + x.onsiteDue, 0),
+          paidRevenue: months.reduce((a, x) => a + x.paidRevenue, 0),
+          paidTotal: months.reduce((a, x) => a + x.onlineRevenue + x.paidRevenue, 0),
           bookings: months.reduce((a, x) => a + x.bookings, 0),
           cancellations: months.reduce((a, x) => a + x.cancellations, 0),
           refunded: months.reduce((a, x) => a + x.refunded, 0),

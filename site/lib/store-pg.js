@@ -40,7 +40,8 @@ CREATE TABLE IF NOT EXISTS bookings (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   expires_at TIMESTAMPTZ,
-  confirmed_at TIMESTAMPTZ
+  confirmed_at TIMESTAMPTZ,
+  paid_at TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS idx_bookings_stay ON bookings (checkin, checkout);
 CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings (status);
@@ -73,6 +74,8 @@ CREATE TABLE IF NOT EXISTS admin_log (
   detail JSONB,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+/* 既存DBへのマイグレーション（CREATE TABLE IF NOT EXISTSは列追加を行わないため） */
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS paid_at TIMESTAMPTZ;
 `;
 
 export function createPgStore(databaseUrl) {
@@ -121,8 +124,8 @@ export function createPgStore(databaseUrl) {
     return {
       id: r.id,
       request_id: r.request_id,
-      checkin: r.checkin,
-      checkout: r.checkout,
+      checkin: dateStr(r.checkin),
+      checkout: dateStr(r.checkout),
       nights: r.nights,
       adults: r.adults,
       infants: r.infants,
@@ -154,6 +157,7 @@ export function createPgStore(databaseUrl) {
       created_at: r.created_at ? new Date(r.created_at).getTime() : null,
       updated_at: r.updated_at ? new Date(r.updated_at).getTime() : null,
       expires_at: r.expires_at ? new Date(r.expires_at).getTime() : null,
+      paid_at: r.paid_at ? new Date(r.paid_at).getTime() : null,
     };
   }
 
@@ -274,6 +278,19 @@ export function createPgStore(databaseUrl) {
          RETURNING *`,
         [id, patch.status || 'refunded', patch.refund_amount != null ? patch.refund_amount : null,
          patch.admin_memo != null ? patch.admin_memo : null]
+      );
+      return rows.rows[0] ? rowToBooking(rows.rows[0]) : null;
+    },
+
+    /* 入金記録: confirmed のみ・冪等（2回押しても paid_at は変わらない） */
+    async markBookingPaid(id, memo) {
+      const pool = await db();
+      const rows = await pool.query(
+        `UPDATE bookings
+         SET paid_at = now(), admin_memo = COALESCE($2, admin_memo), updated_at = now()
+         WHERE id = $1 AND status = 'confirmed' AND paid_at IS NULL
+         RETURNING *`,
+        [id, memo != null ? memo : null]
       );
       return rows.rows[0] ? rowToBooking(rows.rows[0]) : null;
     },

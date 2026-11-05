@@ -53,6 +53,12 @@
     .muted { color: #9B8E82; font-size: 12px; }
     .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
     textarea { width: 100%; }
+    .table-wrap { overflow-x: auto; }
+    .pay-tag { display: inline-block; padding: 2px 8px; font-size: 11px; margin-right: 4px; letter-spacing: 0.03em; }
+    .pay-tag.online { background: #E3EDF3; color: #41627A; }
+    .pay-tag.onsite { background: #FBF3E1; color: #8A6D3B; }
+    .pay-tag.manual { background: #E3F3EC; color: #3B6D52; }
+    .paid-badge { display: inline-block; background: #E8EFE3; color: #4A6741; padding: 2px 8px; font-size: 11px; margin-left: 6px; }
   
 /* ---- スマートフォン対応 ---- */
 @media (max-width: 720px) {
@@ -116,14 +122,16 @@
       <div id="tab-bookings">
         <div class="card">
           <div class="toolbar">
-            <select id="filterStatus"><option value="">すべて</option><option value="confirmed">confirmed</option><option value="pending_payment">pending</option><option value="expired">expired</option><option value="cancelled">cancelled</option><option value="refunded">refunded</option></select>
+            <select id="filterStatus"><option value="">すべて</option><option value="confirmed">確定</option><option value="pending_payment">決済待ち</option><option value="expired">期限切れ</option><option value="cancelled">キャンセル</option><option value="refunded">返金済み</option></select>
             <input id="searchQ" placeholder="名前・メール・電話・予約番号で検索" style="width:280px">
             <button class="act" id="searchBtn">検索</button>
           </div>
+          <div class="table-wrap">
           <table>
-            <thead><tr><th>予約番号</th><th>状態</th><th>チェックイン</th><th> checkout</th><th>泊</th><th>人数</th><th>お名前</th><th>メール / TEL</th><th>金額</th><th>メール</th><th>操作</th></tr></thead>
+            <thead><tr><th>予約番号</th><th>状態</th><th>チェックイン</th><th>チェックアウト</th><th>泊数</th><th>人数</th><th>お名前</th><th>連絡先</th><th>支払い</th><th>操作</th></tr></thead>
             <tbody id="bookingRows"></tbody>
           </table>
+          </div>
           <p class="muted" id="bookingCount"></p>
         </div>
       </div>
@@ -186,9 +194,9 @@
         <div class="card">
           <div class="toolbar"><button class="act" id="anaPrevY">前年</button><strong id="anaYear"></strong><button class="act" id="anaNextY">翌年</button></div>
           <div id="anaTotals" class="row" style="gap:24px"></div>
-          <table><thead><tr><th>月</th><th>オンライン売上</th><th>現地支払予定</th><th>予約</th><th>キャンセル</th><th>返金</th><th>手動</th><th>泊数</th><th>稼働率</th></tr></thead><tbody id="anaRows"></tbody></table>
+          <table><thead><tr><th>月</th><th>オンライン売上</th><th>入金済み(手動)</th><th>現地支払予定</th><th>予約</th><th>キャンセル</th><th>返金</th><th>手動</th><th>泊数</th><th>稼働率</th></tr></thead><tbody id="anaRows"></tbody></table>
           <p class="muted">オプション利用: BBQ <span id="anaBbq"></span>件 / サウナ <span id="anaSauna"></span>件 / アーリーIN <span id="anaEarly"></span>件（希望ベース）</p>
-          <p class="muted">※オンライン売上はStripe決済済み分。手動予約は現地精算のため含みません。</p>
+          <p class="muted">※オンライン売上はStripe決済分。入金済み(手動)は予約一覧の「入金済みにする」を押した手動予約の金額です。現地支払予定は未入金の現地精算分です。</p>
         </div>
       </div>
 
@@ -335,19 +343,23 @@
         tb.innerHTML = '';
         d.bookings.forEach((b) => {
           const tr = document.createElement('tr');
-          const dt = new Date(b.created_at || 0);
+          const payTag = b.source === 'manual' ? '<span class="pay-tag manual">手動・現地精算</span>'
+            : (b.payment_method === 'onsite' ? '<span class="pay-tag onsite">現地払い</span>' : '<span class="pay-tag online">オンライン決済</span>');
+          const paidUi = (b.source === 'manual' && b.status === 'confirmed')
+            ? (b.paid_at ? '<span class="paid-badge">入金済み</span>'
+               : ' <button class="act" data-a="markpaid" data-id="' + b.id + '">入金済みにする</button>')
+            : '';
           tr.innerHTML = '<td data-label="予約番号">' + b.id + '</td>'
             + '<td data-label="状態"><span class="status s-' + b.status + '">' + (STATUS_JA[b.status] || b.status) + '</span></td>'
             + '<td data-label="チェックイン">' + b.checkin + '</td><td data-label="チェックアウト">' + b.checkout + '</td><td data-label="泊数">' + b.nights + '</td>'
-            + '<td data-label="人数">' + b.adults + (b.infants ? '+' + b.infants + '児' : '') + '</td>'
+            + '<td data-label="人数">' + b.adults + '名' + (b.infants ? '+' + b.infants + '名(乳幼児)' : '') + '</td>'
             + '<td class="wrap" data-label="お名前">' + esc(b.guest_name) + '</td>'
             + '<td class="wrap" data-label="連絡先">' + esc(b.guest_email) + '<br>' + esc(b.guest_phone) + '</td>'
-            + '<td data-label="金額">¥' + (b.price_jpy || 0).toLocaleString() + '</td>'
-            + '<td data-label="メール">' + (b.email_status || '') + '</td>'
+            + '<td data-label="支払い">' + payTag + ' ¥' + (b.price_jpy || 0).toLocaleString() + paidUi + '</td>'
             + '<td>'
             + '<button class="act" data-a="detail" data-id="' + b.id + '">詳細</button>'
             + (b.status === 'confirmed' ? '<button class="act" data-a="cancel" data-id="' + b.id + '">キャンセル</button>' : '')
-            + (b.status === 'confirmed' ? '<button class="act" data-a="refund" data-id="' + b.id + '">返金</button>' : '')
+            + (b.status === 'confirmed' && b.source !== 'manual' ? '<button class="act" data-a="refund" data-id="' + b.id + '">返金</button>' : '')
             + (b.status === 'confirmed' && b.email_status !== 'sent' ? '<button class="act" data-a="resend" data-id="' + b.id + '">メール再送</button>' : '')
             + '</td>';
           tb.appendChild(tr);
@@ -390,6 +402,18 @@
         if (!confirm('Stripeで返金し、予約を返金済みにしますか？')) return;
         const d = await api('booking.refund', { id });
         alert('返金しました（' + d.refund_id + '）');
+        loadBookings();
+        return;
+      }
+      if (a === 'markpaid') {
+        if (!confirm('宿泊料金を受け取った記録にしますか？売上・分析に「入金済み売上」として反映されます。')) return;
+        try {
+          await api('booking.mark-paid', { id });
+          alert('入金を記録しました。売上・分析に反映されています。');
+        } catch (e) {
+          if (e.message.includes('すでに処理済み')) alert('すでに入金記録済みです');
+          else alert('記録に失敗しました: ' + e.message);
+        }
         loadBookings();
         return;
       }
@@ -634,7 +658,9 @@ async function loadAnalytics(year) {
   document.getElementById('anaEarly').textContent = d.options.earlyCheckin;
   const t = d.totals;
   document.getElementById('anaTotals').innerHTML =
+    '<div><label>入金済み売上（オンライン+手動入金）</label><strong>¥' + (t.paidTotal || 0).toLocaleString() + '</strong></div>' +
     '<div><label>年間オンライン売上</label><strong>¥' + t.onlineRevenue.toLocaleString() + '</strong></div>' +
+    '<div><label>手動入金済み</label><strong>¥' + (t.paidRevenue || 0).toLocaleString() + '</strong></div>' +
     '<div><label>現地支払予定</label><strong>¥' + t.onsiteDue.toLocaleString() + '</strong></div>' +
     '<div><label>予約数</label><strong>' + t.bookings + '</strong></div>' +
     '<div><label>キャンセル</label><strong>' + t.cancellations + '</strong></div>' +
@@ -643,7 +669,16 @@ async function loadAnalytics(year) {
     '<div><label>平均宿泊人数</label><strong>' + t.avgGuests + '名</strong></div>';
   const tb = document.getElementById('anaRows');
   tb.innerHTML = d.months.map(function (m) {
-    return '<tr><td data-label="月">' + m.month + '月</td><td data-label="オンライン売上">¥' + m.onlineRevenue.toLocaleString() + '</td><td data-label="現地支払予定">¥' + m.onsiteDue.toLocaleString() + '</td><td data-label="予約">' + m.bookings + '</td><td data-label="キャンセル">' + m.cancellations + '</td><td data-label="返金">' + m.refunded + '</td><td data-label="手動">' + m.manual + '</td><td data-label="泊数">' + m.nights + '</td><td data-label="稼働率">' + m.occupancy + '%</td></tr>';
+    return '<tr><td data-label="月">' + m.month + '月</td>'
+      + '<td data-label="オンライン売上">¥' + m.onlineRevenue.toLocaleString() + '</td>'
+      + '<td data-label="入金済み(手動)">¥' + (m.paidRevenue || 0).toLocaleString() + '</td>'
+      + '<td data-label="現地支払予定">¥' + m.onsiteDue.toLocaleString() + '</td>'
+      + '<td data-label="予約">' + m.bookings + '</td>'
+      + '<td data-label="キャンセル">' + m.cancellations + '</td>'
+      + '<td data-label="返金">' + m.refunded + '</td>'
+      + '<td data-label="手動">' + m.manual + '</td>'
+      + '<td data-label="泊数">' + m.nights + '</td>'
+      + '<td data-label="稼働率">' + m.occupancy + '%</td></tr>';
   }).join('');
 }
 document.getElementById('anaPrevY').addEventListener('click', function () { loadAnalytics(parseInt(document.getElementById('anaYear').textContent, 10) - 1); });

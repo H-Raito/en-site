@@ -569,6 +569,20 @@ test('api: admin 手動予約は確定状態で登録・重複は409・analytics
   assert.equal(feb.manual, 1);
   assert.equal(feb.onsiteDue, 96000);
   assert.ok(feb.occupancy > 0);
+  /* 入金済みボタン: 記録→analyticsの入金済み売上に反映・二重押下は409 */
+  const paid = makeReqRes('GET', '/api/admin.js?action=booking.mark-paid&id=' + mk.res.payload.booking.id, null, H);
+  await mod.default(paid.req, paid.res);
+  assert.equal(paid.res.statusCode, 200);
+  assert.ok(paid.res.payload.booking.paid_at > 0);
+  const paid2 = makeReqRes('GET', '/api/admin.js?action=booking.mark-paid&id=' + mk.res.payload.booking.id, null, H);
+  await mod.default(paid2.req, paid2.res);
+  assert.equal(paid2.res.statusCode, 409);
+  const ana2 = makeReqRes('GET', '/api/admin.js?action=analytics&year=2027', null, H);
+  await mod.default(ana2.req, ana2.res);
+  const feb2 = ana2.res.payload.months[1];
+  assert.equal(feb2.paidRevenue, 96000);
+  assert.equal(ana2.res.payload.totals.paidRevenue, 96000);
+  assert.equal(ana2.res.payload.totals.paidTotal, 96000);
 });
 
 test('email: 未設定時はskippedを返す（実通信なし）', async () => {
