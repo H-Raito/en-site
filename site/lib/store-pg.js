@@ -295,6 +295,19 @@ export function createPgStore(databaseUrl) {
       return rows.rows[0] ? rowToBooking(rows.rows[0]) : null;
     },
 
+    /* 入金記録の取り消し: confirmed かつ記録済みのときだけ（未記録なら null） */
+    async unmarkBookingPaid(id, memo) {
+      const pool = await db();
+      const rows = await pool.query(
+        `UPDATE bookings
+         SET paid_at = NULL, admin_memo = COALESCE($2, admin_memo), updated_at = now()
+         WHERE id = $1 AND status = 'confirmed' AND paid_at IS NOT NULL
+         RETURNING *`,
+        [id, memo != null ? memo : null]
+      );
+      return rows.rows[0] ? rowToBooking(rows.rows[0]) : null;
+    },
+
     async setBookingStatus(id, status, extra = {}) {
       const pool = await db();
       const rows = await pool.query(

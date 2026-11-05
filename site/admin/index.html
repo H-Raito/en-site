@@ -351,7 +351,8 @@
           const payTag = b.source === 'manual' ? '<span class="pay-tag manual">手動・現地精算</span>'
             : (b.payment_method === 'onsite' ? '<span class="pay-tag onsite">現地払い</span>' : '<span class="pay-tag online">オンライン決済</span>');
           const paidUi = (b.source === 'manual' && b.status === 'confirmed')
-            ? (b.paid_at ? '<span class="paid-badge">入金済み</span>'
+            ? (b.paid_at
+               ? '<span class="paid-badge">入金済み</span> <button class="act" data-a="unmarkpaid" data-id="' + b.id + '">入金をキャンセル</button>'
                : ' <button class="act" data-a="markpaid" data-id="' + b.id + '">入金済みにする</button>')
             : '';
           tr.innerHTML = '<td data-label="予約番号">' + b.id + '</td>'
@@ -427,6 +428,19 @@
           } catch (e) {
             if (e.message === 'unauthorized') return;
             setMsg('bookingMsg', '記録に失敗しました: ' + e.message, 'err');
+          }
+          await loadBookings();
+        });
+        return;
+      }
+      if (a === 'unmarkpaid') {
+        await withBusy(btn, async () => {
+          try {
+            await api('booking.unmark-paid', { id });
+            setMsg('bookingMsg', '入金記録を取り消しました。売上・分析からも外れています。', 'ok');
+          } catch (e) {
+            if (e.message === 'unauthorized') return;
+            setMsg('bookingMsg', '取り消しに失敗しました: ' + e.message, 'err');
           }
           await loadBookings();
         });

@@ -176,6 +176,18 @@ export function createMemoryStore() {
       });
     },
 
+    /* 入金記録の取り消し。未記録なら null */
+    async unmarkBookingPaid(id, memo) {
+      return lock(() => {
+        const b = bookings.find((x) => x.id === id);
+        if (!b || b.status !== 'confirmed' || !b.paid_at) return null;
+        b.paid_at = null;
+        if (memo != null) b.admin_memo = String(memo).slice(0, 2000);
+        b.updated_at = Date.now();
+        return { ...b };
+      });
+    },
+
     async updateBooking(id, patch) {
       return lock(() => {
         const b = bookings.find((x) => x.id === id);

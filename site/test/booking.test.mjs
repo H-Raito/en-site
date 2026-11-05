@@ -583,6 +583,20 @@ test('api: admin 手動予約は確定状態で登録・重複は409・analytics
   assert.equal(feb2.paidRevenue, 96000);
   assert.equal(ana2.res.payload.totals.paidRevenue, 96000);
   assert.equal(ana2.res.payload.totals.paidTotal, 96000);
+  /* 入金取消: 記録を外すと analytics からも外れる（再計上されない） */
+  const unmark = makeReqRes('GET', '/api/admin.js?action=booking.unmark-paid&id=' + mk.res.payload.booking.id, null, H);
+  await mod.default(unmark.req, unmark.res);
+  assert.equal(unmark.res.statusCode, 200);
+  assert.equal(unmark.res.payload.booking.paid_at, null);
+  const ana3 = makeReqRes('GET', '/api/admin.js?action=analytics&year=2027', null, H);
+  await mod.default(ana3.req, ana3.res);
+  assert.equal(ana3.res.payload.months[1].paidRevenue, 0);
+  assert.equal(ana3.res.payload.totals.paidRevenue, 0);
+  /* 未記録に対する取消は成功扱い（冪等） */
+  const unmark2 = makeReqRes('GET', '/api/admin.js?action=booking.unmark-paid&id=' + mk.res.payload.booking.id, null, H);
+  await mod.default(unmark2.req, unmark2.res);
+  assert.equal(unmark2.res.statusCode, 200);
+  assert.equal(unmark2.res.payload.already, true);
 });
 
 test('email: 未設定時はskippedを返す（実通信なし）', async () => {

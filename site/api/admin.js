@@ -222,8 +222,19 @@ async function routeAction(action, req, res, q, body, username, store) {
       /* 冪等: すでに記録済みなら 409（2回押しても二重計上されない） */
       const updated = await store.markBookingPaid(id, '入金記録(' + username + ')');
       if (!updated) { json(res, 409, { error: 'already_processed' }); return; }
-      await store.logAdmin('booking_paid', { id, amount: b.onsite_amount || 0, by: username });
+      await store.logAdmin('booking_paid', { id, amount: b.onsite_amount, by: username });
       json(res, 200, { ok: true, booking: updated });
+      return;
+    }
+    case 'booking.unmark-paid': {
+      const id = q.get('id') || '';
+      const b = await store.getBooking(id);
+      if (!b) { json(res, 404, { error: 'not_found' }); return; }
+      if (b.status !== 'confirmed') { json(res, 400, { error: 'invalid booking' }); return; }
+      /* 未記録に対しては何もせず成功扱い（冪等・取り消しは売上から自動で外れる） */
+      const updated = await store.unmarkBookingPaid(id, '入金取消(' + username + ')');
+      await store.logAdmin('booking_unmark_paid', { id, amount: b.onsite_amount, by: username, wasMarked: !!updated });
+      json(res, 200, { ok: true, already: !updated, booking: updated || b });
       return;
     }
     case 'booking.manual': {
