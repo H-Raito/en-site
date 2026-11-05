@@ -16,6 +16,10 @@ function json(res, code, obj) {
   res.status(code).json(obj);
 }
 
+/* 管理者シード済みキャッシュ（モジュールスコープ）: 同一Functionインスタンス内では
+   ログインのたびに管理者アカウントを再INSERTしない（コールドスタート後の最初のログインでのみ実行） */
+let adminSeedCache = null;
+
 export default async function handler(req, res) {
   const q = new URLSearchParams((req.url.split('?')[1]) || '');
   const body = (req.body && typeof req.body === 'object') ? req.body : null;
@@ -48,11 +52,15 @@ export default async function handler(req, res) {
     }
     try {
       const store = await getStore();
-      await store.ensureAdminUsers(
-        adminSeedEntries().map(function (e) {
-          return { username: e.username, name: e.name, passHash: hashPassword(e.password) };
-        })
-      );
+      /* シードは同一インスタンス内で1回だけ実行する */
+      if (adminSeedCache !== process.env.ADMIN_SEED) {
+        await store.ensureAdminUsers(
+          adminSeedEntries().map(function (a) {
+            return { username: a.username, name: a.name, passHash: hashPassword(a.password) };
+          })
+        );
+        adminSeedCache = process.env.ADMIN_SEED;
+      }
       const user = await store.getAdminUser(username);
       if (!user || !verifyPassword(password, user.passHash)) {
         recordLoginFailure(username);
@@ -92,6 +100,12 @@ export default async function handler(req, res) {
     return;
   }
 
+  /* セッション確認のみ: DBに触れずCookie検証だけで即応答（管理画面の初期表示を高速化） */
+  if (action === 'session.check') {
+    json(res, 200, { ok: true, username });
+    return;
+  }
+
   let store;
   try {
     store = await getStore();
@@ -99,7 +113,6 @@ export default async function handler(req, res) {
     json(res, 503, { error: 'not_configured' });
     return;
   }
-  await store.expireStale();
 
   try {
     await routeAction(action, req, res, q, body, username, store);
@@ -116,6 +129,8 @@ export default async function handler(req, res) {
 async function routeAction(action, req, res, q, body, username, store) {
   switch (action) {
     case 'bookings.list': {
+      /* 一覧・カレンダー・分析など「状態表示が重要な読み取り」でのみ期限切れ仮予約を掃除する（全リクエストでの余分なDB往復を削減） */
+      await store.expireStale();
       const list = await store.listBookings({ status: q.get('status') || '', q: q.get('q') || '' });
       json(res, 200, { bookings: list });
       return;
@@ -252,6 +267,7 @@ async function routeAction(action, req, res, q, body, username, store) {
     }
     case 'calendar': {
       const year = parseInt(q.get('year'), 10) || new Date().getFullYear();
+      await store.expireStale();
       json(res, 200, { year, bookings: await store.listBookings({}), blocked: await store.listBlocked() });
       return;
     }
@@ -271,6 +287,7 @@ async function routeAction(action, req, res, q, body, username, store) {
     }
     case 'analytics': {
       const year = parseInt(q.get('year'), 10) || new Date().getFullYear();
+      await store.expireStale();
       const list = await store.listBookings({});
       const months = [];
       for (let m = 1; m <= 12; m++) {

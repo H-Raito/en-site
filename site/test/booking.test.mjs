@@ -493,6 +493,43 @@ test('api: admin 未認証401・CSRF拒否・ログイン後に操作', async ()
   assert.equal(badLogin.res.statusCode, 401);
 });
 
+test('api: admin session.check はDB未設定でも200（Cookie検証のみ・DB参照しない）', async () => {
+  process.env.ADMIN_KEY = 'test-admin-key-123';
+  const prevDb = process.env.DATABASE_URL;
+  const prevVercel = process.env.VERCEL;
+  delete process.env.DATABASE_URL;
+  process.env.VERCEL = 'true';
+  try {
+    const mod = await import('../api/admin.js');
+    const { issueToken } = await import('../lib/admin-auth.js');
+    /* 未認証は401 */
+    const noauth = makeReqRes('GET', '/api/admin.js?action=session.check');
+    await mod.default(noauth.req, noauth.res);
+    assert.equal(noauth.res.statusCode, 401);
+    /* 有効な署名クッキーがあればDB未設定でも200 */
+    const cookie = 'en_admin=' + issueToken('admin');
+    const check = makeReqRes('GET', '/api/admin.js?action=session.check', null, { cookie });
+    await mod.default(check.req, check.res);
+    assert.equal(check.res.statusCode, 200);
+    assert.equal(check.res.payload.username, 'admin');
+    /* 同じ環境でDBを要する操作は503 not_configured（session.checkだけがDB不要であることの対比）。
+       モジュール単位のストアキャッシュも解消してから評価する（テスト順序に依存しない） */
+    const { resetStoreCache } = await import('../lib/store.js');
+    const prevStore = globalThis.__enTestStore;
+    delete globalThis.__enTestStore;
+    resetStoreCache();
+    const list = makeReqRes('GET', '/api/admin.js?action=bookings.list', null, { cookie });
+    await mod.default(list.req, list.res);
+    assert.equal(list.res.statusCode, 503);
+    assert.equal(list.res.payload.error, 'not_configured');
+    resetStoreCache();
+    if (prevStore !== undefined) globalThis.__enTestStore = prevStore;
+  } finally {
+    if (prevDb === undefined) delete process.env.DATABASE_URL; else process.env.DATABASE_URL = prevDb;
+    if (prevVercel === undefined) delete process.env.VERCEL; else process.env.VERCEL = prevVercel;
+  }
+});
+
 test('api: admin 手動予約は確定状態で登録・重複は409・analytics集計', async () => {
   process.env.ADMIN_KEY = 'test-admin-key-123';
   process.env.ADMIN_SEED = 'サイト管理者:admin2:testpass123';

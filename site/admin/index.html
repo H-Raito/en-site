@@ -38,6 +38,10 @@
     .msg { font-size: 12px; margin-top: 8px; }
     .msg.err { color: #9C5A5A; }
     .msg.ok { color: #4A6741; }
+    #loadbar { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 999; background: linear-gradient(90deg, rgba(44,37,32,0.12) 25%, rgba(44,37,32,0.55) 50%, rgba(44,37,32,0.20) 75%); background-size: 200% 100%; animation: loadbar-anim 1.1s linear infinite; display: none; }
+    #loadbar.run { display: block; }
+    @keyframes loadbar-anim { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+    button.act:disabled { opacity: 0.5; cursor: wait; }
     .grid2 { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
     .calcell { border: 1px solid #E4DCD2; min-height: 64px; font-size: 11px; padding: 4px; }
     .calcell .d { color: #9B8E82; }
@@ -84,6 +88,7 @@
 </style>
 </head>
 <body>
+  <div id="loadbar" aria-hidden="true"></div>
   <div id="loginView">
     <div class="card">
       <h2>EN 予約管理 ログイン</h2>
@@ -205,31 +210,83 @@
   <script>
     const $ = (id) => document.getElementById(id);
     let authed = false;
+    let inflight = 0;
+
+    /* エラーコード→日本語メッセージ。d.detailがあれば末尾に添える */
+    const API_ERR_JA = {
+      unauthorized: 'セッションが切れました。再度ログインしてください',
+      csrf: 'ページが古いためブロックされました。ページを再読み込みしてください',
+      too_many_attempts: '試行回数が制限されました。15分後に再試行してください',
+      unavailable: 'その日程はすでに予約・受付停止が入っています',
+      not_found: '対象が見つかりません（すでに状態変更・削除された可能性があります）',
+      already_processed: 'すでに処理済みです。一覧を更新してください',
+      refund_failed: 'Stripe返金に失敗しました',
+      'invalid dates': '日付の指定が不正です',
+      'invalid guest info': 'お名前・メール・電話の入力に不備があります',
+      'invalid booking': '対象の予約が確定状態ではありません',
+      'internal error': 'サーバーでエラーが発生しました。時間を置いて再試行してください',
+    };
+
+    function setMsg(id, text, cls) {
+      const el = $(id);
+      if (!el) return;
+      el.textContent = text;
+      el.className = 'msg ' + (cls || '');
+    }
+
+    /* ボタンの二重押下防止+処理中表示 */
+    async function withBusy(btn, fn) {
+      if (!btn || btn.disabled) return;
+      const orig = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '処理中…';
+      try {
+        return await fn();
+      } finally {
+        btn.disabled = false;
+        btn.textContent = orig;
+      }
+    }
 
     async function api(action, params, body) {
-      const qs = new URLSearchParams({ action, ...(params || {}) });
-      const opt = body ? {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-        body: JSON.stringify(body),
-      } : {};
-      const r = await fetch('/api/admin.js?' + qs.toString(), opt);
-      if (r.status === 401) { showLogin(); throw new Error('unauthorized'); }
-      const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error || 'error');
-      return d;
+      inflight++;
+      $('loadbar').classList.add('run');
+      const ctrl = new AbortController();
+      const timer = setTimeout(function () { ctrl.abort(); }, 20000);
+      try {
+        const qs = new URLSearchParams({ action: action, ...(params || {}) });
+        const opt = body ? {
+          method: 'POST',
+          headers: { 'Content-type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+          body: JSON.stringify(body),
+        } : {};
+        opt.signal = ctrl.signal;
+        const r = await fetch('/api/admin.js?' + qs.toString(), opt);
+        if (r.status === 401) { showLogin(); throw new Error('unauthorized'); }
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error((API_ERR_JA[d.error] || d.error || 'HTTP ' + r.status) + (d.detail ? '（' + d.detail + '）' : ''));
+        return d;
+      } catch (e) {
+        const message = e.name === 'AbortError' ? '接続がタイムアウトしました。回線状況を確認して再試行してください' : e.message;
+        throw new Error(message);
+      } finally {
+        clearTimeout(timer);
+        inflight--;
+        if (!inflight) $('loadbar').classList.remove('run');
+      }
     }
 
     function showLogin() { authed = false; $('loginView').hidden = false; $('appView').hidden = true; }
     function showApp() { authed = true; $('loginView').hidden = true; $('appView').hidden = false; loadBookings(); }
 
-    $('loginBtn').addEventListener('click', async () => {
-      try {
-        const r = await fetch('/api/admin.js?action=login', {
-          method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-          body: JSON.stringify({ username: $('username').value, password: $('password').value }),
-        });
-        if (r.ok) { showApp(); } else {
+    $('loginBtn').addEventListener('click', function () {
+      withBusy($('loginBtn'), async () => {
+        try {
+          const r = await fetch('/api/admin.js?action=login', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify({ username: $('username').value, password: $('password').value }),
+          });
+          if (r.ok) { showApp(); return; }
           const d = await r.json().catch(() => ({}));
           const msgs = {
             invalid_credentials: 'ユーザー名またはパスワードが違います',
@@ -242,8 +299,8 @@
           $('loginMsg').textContent = r.status === 429 ? '試行回数が制限されました。15分後に再試行してください'
             : (msgs[d.error] ? (msgs[d.error] + (d.detail ? '（' + d.detail + '）' : '')) : ('ログインエラー(HTTP ' + r.status + ')'));
           $('loginMsg').className = 'msg err';
-        }
-      } catch (e) { $('loginMsg').textContent = '接続エラー'; }
+        } catch (e) { $('loginMsg').textContent = '接続エラー。回線状況を確認して再試行してください'; }
+      });
     });
     $('logoutBtn').addEventListener('click', () => { document.cookie = 'en_admin=; Max-Age=0; Path=/'; showLogin(); });
 
@@ -290,7 +347,10 @@
         tb.querySelectorAll('button').forEach((btn) => {
           btn.addEventListener('click', () => rowAction(btn.dataset.a, btn.dataset.id));
         });
-      } catch (e) { /* ログイン画面へ */ }
+      } catch (e) {
+        if (e.message === 'unauthorized') return;
+        $('bookingCount').textContent = '読み込みに失敗しました: ' + e.message;
+      }
     }
 
     async function rowAction(a, id) {
@@ -299,7 +359,7 @@
         const b = d.booking;
         alert([b.id, '状態: ' + (STATUS_JA[b.status] || b.status),
           b.checkin + ' 〜 ' + b.checkout + '（' + b.nights + '泊）',
-          '大人' + b.adults + '名 / 乳幼児' + (b.children || 0) + '名',
+          '大人' + b.adults + '名 / 乳幼児' + (b.infants || 0) + '名',
           'お名前: ' + b.guest_name + '（' + (b.guest_kana || '') + '）',
           b.guest_email, b.guest_phone,
           '住所: ' + (b.guest_address || '-'),
@@ -340,8 +400,14 @@
     let calData = { bookings: [], blocked: [] };
 
     async function loadCalendar() {
-      calData = await api('calendar', { year: String(calY) });
-      renderMonth();
+      $('calMonthLabel').textContent = '読み込み中…';
+      try {
+        calData = await api('calendar', { year: String(calY) });
+        renderMonth();
+      } catch (e) {
+        if (e.message === 'unauthorized') return;
+        $('calMonthLabel').textContent = '読み込みに失敗しました';
+      }
     }
 
     function renderMonth() {
@@ -418,77 +484,121 @@
       loadCalendar();
     });
 
-    /* 旧ハンドラの無効化（削除済み関数参照の回避） */
-    void calY; void calM;
-    $('calNextY').addEventListener('click', () => { $('calYear').textContent = parseInt($('calYear').textContent, 10) + 1; loadCalendar(); });
 
     async function loadBlocked() {
-      const d = await api('blocked.list');
-      const tb = $('blockedRows');
-      tb.innerHTML = '';
-      d.blocked.forEach((x) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = '<td data-label="日付">' + x.date + '</td><td data-label="理由">' + esc(x.reason || '') + '</td><td data-label="操作"><button class="act" data-d="' + x.date + '">解除</button></td>';
-        tb.appendChild(tr);
-      });
-      tb.querySelectorAll('button').forEach((b) => {
-        b.addEventListener('click', async () => {
-          await api('blocked.remove', {}, { from: b.dataset.d, to: b.dataset.d });
-          loadBlocked();
-        });
-      });
-    }
-    $('blAdd').addEventListener('click', async () => {
       try {
-        await api('blocked.add', {}, { from: $('blFrom').value, to: $('blTo').value || $('blFrom').value, reason: $('blReason').value });
-        $('blMsg').textContent = '登録しました'; $('blMsg').className = 'msg ok';
-        loadBlocked();
-      } catch (e) { $('blMsg').textContent = '登録に失敗しました'; $('blMsg').className = 'msg err'; }
+        const d = await api('blocked.list');
+        const tb = $('blockedRows');
+        tb.innerHTML = '';
+        if (!d.blocked.length) tb.innerHTML = '<tr><td colspan="3" style="color:#9B8E82">受付停止日の登録はありません</td></tr>';
+        d.blocked.forEach((x) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = '<td data-label="日付">' + x.date + '</td><td data-label="理由">' + esc(x.reason || '') + '</td><td data-label="操作"><button class="act" data-d="' + x.date + '">解除</button></td>';
+          tb.appendChild(tr);
+        });
+        tb.querySelectorAll('button').forEach((b) => {
+          b.addEventListener('click', function () {
+            withBusy(b, async () => {
+              try {
+                await api('blocked.remove', {}, { from: b.dataset.d, to: b.dataset.d });
+                await loadBlocked();
+              } catch (e) {
+                if (e.message === 'unauthorized') return;
+                setMsg('blMsg', '解除に失敗しました: ' + e.message, 'err');
+              }
+            });
+          });
+        });
+      } catch (e) {
+        if (e.message === 'unauthorized') return;
+        setMsg('blMsg', '一覧の取得に失敗しました: ' + e.message, 'err');
+      }
+    }
+    $('blAdd').addEventListener('click', function () {
+      withBusy($('blAdd'), async () => {
+        if (!$('blFrom').value) { setMsg('blMsg', '開始日を選択してください', 'err'); return; }
+        try {
+          await api('blocked.add', {}, { from: $('blFrom').value, to: $('blTo').value || $('blFrom').value, reason: $('blReason').value });
+          setMsg('blMsg', '登録しました。カレンダーと予約フォームに反映されます', 'ok');
+          await loadBlocked();
+        } catch (e) {
+          if (e.message === 'unauthorized') return;
+          setMsg('blMsg', '登録に失敗しました: ' + e.message, 'err');
+        }
+      });
     });
-    $('blRemove').addEventListener('click', async () => {
-      await api('blocked.remove', {}, { from: $('blFrom').value, to: $('blTo').value || $('blFrom').value });
-      loadBlocked();
+    $('blRemove').addEventListener('click', function () {
+      withBusy($('blRemove'), async () => {
+        if (!$('blFrom').value) { setMsg('blMsg', '開始日を選択してください', 'err'); return; }
+        if (!confirm('指定した日程の受付停止を解除しますか？')) return;
+        try {
+          await api('blocked.remove', {}, { from: $('blFrom').value, to: $('blTo').value || $('blFrom').value });
+          setMsg('blMsg', '解除しました', 'ok');
+          await loadBlocked();
+        } catch (e) {
+          if (e.message === 'unauthorized') return;
+          setMsg('blMsg', '解除に失敗しました: ' + e.message, 'err');
+        }
+      });
     });
 
     async function loadSettings() {
-      const d = await api('settings.get');
-      $('cancelText').value = (d.settings && d.settings.cancellationPolicyText) || '';
-      const logs = await api('logs');
-      const tb = $('logRows');
-      tb.innerHTML = '';
-      logs.logs.forEach((l) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = '<td data-label="日時">' + new Date(l.created_at).toLocaleString('ja-JP') + '</td><td data-label="操作">' + esc(l.action) + '</td><td data-label="詳細">' + esc(JSON.stringify(l.detail || '')) + '</td>';
-        tb.appendChild(tr);
-      });
+      try {
+        const d = await api('settings.get');
+        $('cancelText').value = (d.settings && d.settings.cancellationPolicyText) || '';
+        const logs = await api('logs');
+        const tb = $('logRows');
+        tb.innerHTML = '';
+        logs.logs.forEach((l) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = '<td data-label="日時">' + new Date(l.created_at).toLocaleString('ja-JP') + '</td><td data-label="操作">' + esc(l.action) + '</td><td data-label="詳細">' + esc(JSON.stringify(l.detail || '')) + '</td>';
+          tb.appendChild(tr);
+        });
+      } catch (e) {
+        if (e.message === 'unauthorized') return;
+        setMsg('setMsg', '読み込みに失敗しました: ' + e.message, 'err');
+      }
     }
-    $('saveCancel').addEventListener('click', async () => {
-      await api('settings.save', {}, { cancellationPolicyText: $('cancelText').value });
-      $('setMsg').textContent = '保存しました。新しい予約の確認画面に反映されます。'; $('setMsg').className = 'msg ok';
+    $('saveCancel').addEventListener('click', function () {
+      withBusy($('saveCancel'), async () => {
+        try {
+          await api('settings.save', {}, { cancellationPolicyText: $('cancelText').value });
+          setMsg('setMsg', '保存しました。新しい予約の確認画面に反映されます。', 'ok');
+        } catch (e) {
+          if (e.message === 'unauthorized') return;
+          setMsg('setMsg', '保存に失敗しました: ' + e.message, 'err');
+        }
+      });
     });
 
-    $('mAdd').addEventListener('click', async () => {
-      try {
-        await api('booking.manual', {}, {
-          checkin: $('mIn').value, checkout: $('mOut').value,
-          adults: parseInt($('mAdults').value, 10), children: parseInt($('mChildren').value, 10) || 0,
-          name: $('mName').value, email: $('mEmail').value, phone: $('mPhone').value,
-          notes: $('mNotes').value,
-        });
-        $('mMsg').textContent = '登録しました（確定状態）'; $('mMsg').className = 'msg ok';
-      } catch (e) { $('mMsg').textContent = '登録に失敗: ' + e.message; $('mMsg').className = 'msg err'; }
+    $('mAdd').addEventListener('click', function () {
+      withBusy($('mAdd'), async () => {
+        if (!$('mIn').value || !$('mOut').value) { setMsg('mMsg', 'チェックイン・チェックアウト日を選択してください', 'err'); return; }
+        try {
+          await api('booking.manual', {}, {
+            checkin: $('mIn').value, checkout: $('mOut').value,
+            adults: parseInt($('mAdults').value, 10), infants: parseInt($('mChildren').value, 10) || 0,
+            name: $('mName').value, email: $('mEmail').value, phone: $('mPhone').value,
+            notes: $('mNotes').value,
+          });
+          setMsg('mMsg', '登録しました（確定状態・現地精算）', 'ok');
+        } catch (e) {
+          if (e.message === 'unauthorized') return;
+          setMsg('mMsg', '登録に失敗しました: ' + e.message, 'err');
+        }
+      });
     });
 
     function esc(s) {
       return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
-    /* 初回: セッション確認のため軽いAPIを叩いて401ならログイン表示 */
+    /* 初回: DBに触れない session.check でセッション復帰（Neonコールドスタート時も即表示） */
     (async () => {
       try {
-        await api('blocked.list');
+        await api('session.check');
         showApp();
-      } catch (e) { /* showLogin済み */ }
+      } catch (e) { /* 未ログインならshowLoginのまま */ }
     })();
   </script>
 </body>
@@ -502,7 +612,14 @@
 })();
 async function loadAnalytics(year) {
   document.getElementById('anaYear').textContent = year;
-  const d = await api('analytics', { year: String(year) });
+  let d;
+  try {
+    d = await api('analytics', { year: String(year) });
+  } catch (e) {
+    if (e.message === 'unauthorized') return;
+    document.getElementById('anaYear').textContent = '読み込みに失敗しました';
+    return;
+  }
   document.getElementById('anaBbq').textContent = d.options.bbq;
   document.getElementById('anaSauna').textContent = d.options.sauna;
   document.getElementById('anaEarly').textContent = d.options.earlyCheckin;

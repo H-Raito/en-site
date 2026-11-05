@@ -85,11 +85,12 @@ export function createPgStore(databaseUrl) {
       pool = new mod.Pool({ connectionString: databaseUrl });
     }
     if (!ready) {
-      /* スキーマは1文ずつ実行（安全側） */
+      /* スキーマは1回の往復でまとめて実行（コールドスタートの遅延軽減）。
+         ドライバが複数文を許可しない場合は1文ずつにフォールバック（全文IF NOT EXISTSで冪等）。 */
       const stmts = SCHEMA.split(';').map((x) => x.trim()).filter(Boolean);
-      ready = (async () => {
+      ready = pool.query(SCHEMA).catch(async () => {
         for (const stmt of stmts) await pool.query(stmt);
-      })();
+      });
       ready.catch(() => { ready = null; });
     }
     await ready;
