@@ -1,4 +1,5 @@
 // 空室カレンダー用API。指定範囲の予約済み宿泊夜と受付停止日を返す。
+// from/to（YYYY-MM-DD）指定可。未指定時は当月から6か月分。
 import { getStore } from '../lib/store.js';
 import { tokyoToday, parseDate, fmtUTC, dateToUTC } from '../lib/util.js';
 
@@ -13,13 +14,28 @@ export default async function handler(req, res) {
     const today = tokyoToday();
     const todayMs = dateToUTC(parseDate(today));
     const q = new URLSearchParams((req.url.split('?')[1]) || '');
-    const months = Math.min(Math.max(parseInt(q.get('months') || '3', 10) || 3, 1), 6);
-    const from = new Date(todayMs);
-    from.setUTCMonth(from.getUTCMonth(), 1);
-    const to = new Date(todayMs);
-    to.setUTCMonth(to.getUTCMonth() + months);
-    const fromStr = fmtUTC(from.getTime());
-    const toStr = fmtUTC(to.getTime() - 86400000);
+
+    let fromStr, toStr;
+    const pFrom = q.get('from');
+    const pTo = q.get('to');
+    const fromD = parseDate(pFrom);
+    const toD = parseDate(pTo);
+    if (fromD && toD && dateToUTC(fromD) <= dateToUTC(toD)) {
+      /* 明示範囲（最長13か月に制限） */
+      fromStr = pFrom;
+      const capped = new Date(dateToUTC(fromD));
+      capped.setUTCMonth(capped.getUTCMonth() + 13);
+      toStr = dateToUTC(toD) < capped.getTime() ? pTo : fmtUTC(capped.getTime() - 86400000);
+    } else {
+      const months = Math.min(Math.max(parseInt(q.get('months') || '3', 10) || 3, 1), 6);
+      const from = new Date(todayMs);
+      from.setUTCMonth(from.getUTCMonth(), 1);
+      const to = new Date(todayMs);
+      to.setUTCMonth(to.getUTCMonth() + months);
+      fromStr = fmtUTC(from.getTime());
+      toStr = fmtUTC(to.getTime() - 86400000);
+    }
+
     const { bookedNights, blockedDates } = await store.availability(fromStr, toStr);
     res.status(200).json({
       from: fromStr,

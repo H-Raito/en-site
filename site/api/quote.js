@@ -1,6 +1,6 @@
 // サーバー側料金見積り。表示金額と決済金額の一致を保証する唯一の計算経路。
 import { getStore } from '../lib/store.js';
-import { tokyoToday } from '../lib/util.js';
+import { tokyoToday, eachNight } from '../lib/util.js';
 import { computePrice, validateBookingInput } from '../lib/pricing.js';
 
 export default async function handler(req, res) {
@@ -27,8 +27,11 @@ export default async function handler(req, res) {
   try {
     const store = await getStore();
     await store.expireStale();
-    const hit = await store.findActive(body.checkin, body.checkout);
-    if (hit) {
+    const { bookedNights, blockedDates } = await store.availability(body.checkin, body.checkout);
+    const conflict = eachNight(body.checkin, body.checkout).some(function (n) {
+      return bookedNights.has(n) || blockedDates.has(n);
+    });
+    if (conflict) {
       res.status(409).json({ error: 'unavailable' });
       return;
     }

@@ -77,16 +77,23 @@ export function initBooking() {
   }
 
   /* ---------- 空室データ ---------- */
-  async function loadAvailability() {
+  let availRanges = []; /* 取得済み範囲 [{from, to}] */
+
+  async function ensureAvailability(fromS, toS) {
+    /* すでに取得済みの範囲に含まれるなら再取得しない */
+    const covered = availRanges.some(function (r) { return r.from <= fromS && toS <= r.to; });
+    if (covered) return false;
     try {
-      const r = await fetch('/api/availability?months=4', { cache: 'no-store' });
+      const r = await fetch('/api/availability?from=' + fromS + '&to=' + toS, { cache: 'no-store' });
       const d = await r.json();
-      bookedNights = new Set(d.booked || []);
-      blockedDates = new Set(d.blocked || []);
+      if (!r.ok) return false;
+      (d.booked || []).forEach(function (n) { bookedNights.add(n); });
+      (d.blocked || []).forEach(function (n) { blockedDates.add(n); });
+      availRanges.push({ from: fromS, to: toS });
       availLoaded = true;
+      return true;
     } catch (e) {
-      /* 取得できない場合はサーバー側最終検証に委ねる */
-      availLoaded = false;
+      return false;
     }
   }
 
@@ -117,6 +124,12 @@ export function initBooking() {
   function renderCalendar() {
     if (!calGrid) return;
     calMonthEl.textContent = calY + '年 ' + calM + '月';
+    const __dim = new Date(calY, calM, 0).getDate();
+    const __last = fmt(calY, calM, __dim);
+    const __first = fmt(calY, calM, 1);
+    ensureAvailability(__first, __last).then(function (fetched) {
+      if (fetched) renderCalendar();
+    });
     const first = new Date(calY, calM - 1, 1);
     const daysInMonth = new Date(calY, calM, 0).getDate();
     const startDow = first.getDay();
@@ -573,7 +586,9 @@ export function initBooking() {
   renderCalendar();
   updateDateDisplay();
   refreshQuote();
-  loadAvailability().then(function () { renderCalendar(); });
+  ensureAvailability(fmt(calY, calM, 1), fmt(calY, calM, new Date(calY, calM, 0).getDate())).then(function (fetched) {
+    if (fetched) renderCalendar();
+  });
 
   /* ---------- 決済戻りの処理 ---------- */
   const params = new URLSearchParams(window.location.search);
