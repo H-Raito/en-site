@@ -22,7 +22,7 @@
 - データベース: Neon Postgres（@neondatabase/serverless の Pool・pg互換API）
 - 決済: Stripe Checkout + Webhook（冪等設計）
 - メール: EmailJS REST API（サーバー送信・DB記録と再送機能付き）
-- テスト: node:test（41件・`npm test` で実行）
+- テスト: node:test（`npm test` で実行・件数はテスト実行結果を参照）
 
 ## セットアップ
 
@@ -56,7 +56,7 @@ GitHub への push で Vercel が自動デプロイします:
 
 ## 開発フロー
 
-1. `develop` ブランチで実装・検証（テスト41件+実機検証）
+1. `develop` ブランチで実装・検証（`npm test`+実機検証）
 2. テスト合格後に `main` へ fast-forward マージ
 3. Vercel 本番デプロイを確認
 

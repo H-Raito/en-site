@@ -13,7 +13,17 @@ beforeEach(() => {
   delete process.env.STRIPE_WEBHOOK_SECRET;
   delete process.env.BOOKING_PAYMENTS_ENABLED;
   delete process.env.ADMIN_KEY;
+  delete process.env.ADMIN_SEED;
   delete process.env.CRON_SECRET;
+  /* メール関連: 環境に実値があってもテスト中は決して送信しない（Issue #1） */
+  delete process.env.EMAILJS_SERVICE_ID;
+  delete process.env.EMAILJS_TEMPLATE_CUSTOMER;
+  delete process.env.EMAILJS_TEMPLATE_OWNER;
+  delete process.env.EMAILJS_TEMPLATE_THANKYOU;
+  delete process.env.EMAILJS_PUBLIC_KEY;
+  delete process.env.EMAILJS_PRIVATE_KEY;
+  delete process.env.OWNER_EMAIL;
+  delete process.env.SITE_URL;
 });
 
 function makeReqRes(method, url, body, headers = {}) {
