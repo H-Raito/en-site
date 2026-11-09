@@ -98,7 +98,7 @@ export default async function handler(req, res) {
       online_total: price.onlineTotal,
       onsite_amount: price.onsiteAmount,
       price_jpy: price.onlineTotal,
-      price_detail: { ...price, adults, nights },
+      price_detail: { ...price, adults: v.adults, nights: v.nights },
       source: 'web',
     });
   } catch (err) {
@@ -117,8 +117,7 @@ export default async function handler(req, res) {
 
   /* 7. Stripe Checkout 生成。決済額 = onlineTotal（onsite選択時は宿泊料のみ） */
   try {
-    const { default: Stripe } = await import('stripe');
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    const stripe = await getStripe();
     const origin = originFrom(req);
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
@@ -150,10 +149,16 @@ export default async function handler(req, res) {
   }
 }
 
+async function getStripe() {
+  /* テスト注入用: __enTestStore と同じやり方（Issue #2） */
+  if (globalThis.__enTestStripe) return globalThis.__enTestStripe;
+  const { default: Stripe } = await import('stripe');
+  return new Stripe(process.env.STRIPE_SECRET_KEY);
+}
+
 async function reuseSession(sessionId) {
   try {
-    const { default: Stripe } = await import('stripe');
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    const stripe = await getStripe();
     const s = await stripe.checkout.sessions.retrieve(sessionId);
     if (s && s.status === 'open' && s.url) return s.url;
     return null;
