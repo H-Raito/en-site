@@ -655,3 +655,33 @@ test('store-pg: 全INSERT文の列数と値の数が一致（本番Neonで発生
   }
   assert.ok(checked >= 3, 'INSERT文が ' + checked + ' 件検出された（store-pg.js全体を対象）');
 });
+
+test('api: 決済ONで予約作成が500にならずprice_detailに人数・泊数が入る（Issue #2）', async () => {
+  globalThis.__enTestStore = await makeStore();
+  process.env.BOOKING_PAYMENTS_ENABLED = 'true';
+  process.env.STRIPE_SECRET_KEY = 'sk_test_dummy';
+  globalThis.__enTestStripe = {
+    checkout: { sessions: {
+      create: async () => ({ id: 'cs_test_issue2', url: 'https://stripe.example/checkout' }),
+      retrieve: async (id) => ({ id, status: 'open', url: 'https://stripe.example/checkout' }),
+    } },
+  };
+  try {
+    const mod = await import('../api/booking.js');
+    const { req, res } = makeReqRes('POST', '/api/booking', {
+      checkin: '2027-04-01', checkout: '2027-04-03', adults: 4, infants: 1,
+      name: 'クレジット太郎', kana: 'クレジットタロウ', email: 'card@example.com', phone: '0773216424',
+      postal: '602-0000', address: '京都市上京区', arrival: '15:00', notes: '',
+      options: {}, paymentMethod: 'online', request_id: 'req-issue2-1',
+    });
+    await mod.default(req, res);
+    assert.equal(res.statusCode, 200, '実際の応答: ' + JSON.stringify(res.payload));
+    const b = await globalThis.__enTestStore.getBookingByRequest('req-issue2-1');
+    assert.ok(b, '予約が保存されている');
+    assert.equal(b.price_detail.adults, 4);
+    assert.equal(b.price_detail.nights, 2);
+  } finally {
+    delete globalThis.__enTestStore;
+    delete globalThis.__enTestStripe;
+  }
+});
