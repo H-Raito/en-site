@@ -1,46 +1,49 @@
 // Stripe Webhook（正式な決済結果反映経路）。ブラウザが戻らなくても予約が確定する。
 // 冪等: confirmBooking の排他的遷移で重複配信も安全。対応イベント: completed/expired/refunded。
+// VercelのNode.jsヘルパは本文を自動パースして再整形するため、署名検証に必要な生本文が
+// 失われる。ここだけ Web 標準の fetch スタイルで受け、request.text() で生本文を読む。
 import { getStore } from '../lib/store.js';
 import { confirmAndNotify } from '../lib/confirm.js';
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.status(405).json({ received: false });
-    return;
-  }
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!secret || !process.env.STRIPE_SECRET_KEY) {
-    res.status(503).json({ received: false, error: 'stripe not configured' });
-    return;
-  }
-  const raw = await readRaw(req);
-  if (!raw) {
-    res.status(400).json({ received: false, error: 'invalid body' });
-    return;
-  }
-  const sig = req.headers && req.headers['stripe-signature'];
-  if (!sig) {
-    res.status(400).json({ received: false, error: 'missing signature' });
-    return;
-  }
-  const { default: Stripe } = await import('stripe');
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-  let event;
-  try {
-    event = stripe.webhooks.constructEvent(raw, sig, secret);
-  } catch (err) {
-    console.error('webhook signature error:', err.message);
-    res.status(400).json({ received: false, error: 'invalid signature' });
-    return;
-  }
-  try {
-    await handleEvent(event);
-    res.status(200).json({ received: true });
-  } catch (err) {
-    /* 処理失敗は500でStripe再送に委ねる（confirmBookingが冪等なので安全） */
-    console.error('webhook processing error:', err);
-    res.status(500).json({ received: false });
-  }
+export default {
+  async fetch(request) {
+    if (request.method !== 'POST') {
+      return jsonRes(405, { received: false });
+    }
+    const secret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!secret || !process.env.STRIPE_SECRET_KEY) {
+      return jsonRes(503, { received: false, error: 'stripe not configured' });
+    }
+    const raw = await request.text();
+    const sig = request.headers.get('stripe-signature');
+    if (!raw || !sig) {
+      return jsonRes(400, { received: false, error: 'invalid body' });
+    }
+    const { default: Stripe } = await import('stripe');
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(raw, sig, secret);
+    } catch (err) {
+      console.error('webhook signature error:', err.message);
+      return jsonRes(400, { received: false, error: 'invalid signature' });
+    }
+    try {
+      await handleEvent(event);
+      return jsonRes(200, { received: true });
+    } catch (err) {
+      /* 処理失敗は500でStripe再送に委ねる（confirmBookingが冪等なので安全） */
+      console.error('webhook processing error:', err);
+      return jsonRes(500, { received: false });
+    }
+  },
+};
+
+function jsonRes(status, obj) {
+  return new Response(JSON.stringify(obj), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
 }
 
 async function handleEvent(event) {
@@ -75,20 +78,4 @@ async function handleEvent(event) {
       }
     }
   }
-}
-
-function readRaw(req) {
-  return new Promise((resolve) => {
-    if (typeof req.body === 'string') return resolve(req.body);
-    if (req.body && typeof req.body === 'object') return resolve(JSON.stringify(req.body));
-    let raw = '';
-    let tooLarge = false;
-    req.on('data', (c) => {
-      if (tooLarge) return;
-      raw += c;
-      if (raw.length > 262144) { tooLarge = true; resolve(''); }
-    });
-    req.on('end', () => { if (!tooLarge) resolve(raw); });
-    req.on('error', () => resolve(''));
-  });
 }
