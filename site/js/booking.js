@@ -529,6 +529,8 @@ export function initBooking() {
       }
       if (d.error === 'payments_disabled' || d.error === 'not_configured') {
         showErr(3, '現在、オンライン決済の受付準備中です。お手数ですがお電話（0773-21-6424）にてご予約ください。');
+      } else if (d.error === 'pending_exists') {
+        showErr(3, '同じ連絡先で未完了の予約があります。決済を完了するか、30分経過後に再度お試しください。お急ぎの場合はお電話（0773-21-6424）にてご連絡ください。');
       } else if (d.error === 'unavailable') {
         showErr(3, 'この日程は直前に予約が入りました。日付を選び直してください。');
         goToStep(1);

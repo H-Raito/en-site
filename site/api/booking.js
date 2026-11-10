@@ -74,6 +74,13 @@ export default async function handler(req, res) {
     }
   }
 
+  /* 5.5 同一連絡先の未完了仮予約があれば新たに押さえない（いたずら連打で全日程を押さえられるのを防ぐ・Issue #11） */
+  const pendingHit = await store.findActivePendingByContact(email, phone);
+  if (pendingHit) {
+    res.status(409).json({ error: 'pending_exists', bookingId: pendingHit.id });
+    return;
+  }
+
   /* 6. 空室確保（トランザクション・30分仮押さえ） */
   let booking;
   try {

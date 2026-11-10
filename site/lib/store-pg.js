@@ -221,6 +221,20 @@ export function createPgStore(databaseUrl) {
       });
     },
 
+    /* 同一連絡先の未完了仮予約。いたずら連打で全日程を押さえられるのを防ぐ（Issue #11） */
+    async findActivePendingByContact(email, phone) {
+      const pool = await db();
+      const rows = await pool.query(
+        `SELECT id, checkin, checkout FROM bookings
+         WHERE status = 'pending_payment'
+           AND (expires_at IS NULL OR expires_at > now() - interval '15 minutes')
+           AND (guest_email = $1 OR guest_phone = $2)
+         LIMIT 1`,
+        [email, phone]
+      );
+      return rows.rows[0] || null;
+    },
+
     async findActive(checkin, checkout) {
       const pool = await db();
       const rows = await pool.query(
