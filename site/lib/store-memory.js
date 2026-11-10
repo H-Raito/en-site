@@ -94,6 +94,14 @@ export function createMemoryStore() {
       return found ? found.id : null;
     },
 
+    /* 同一連絡先の未完了仮予約。いたずら連打で全日程を押さえられるのを防ぐ（Issue #11） */
+    findActivePendingByContact(email, phone) {
+      const hit = bookings.find((b) => b.status === 'pending_payment'
+        && (b.expires_at === null || b.expires_at > Date.now() - 15 * 60 * 1000)
+        && (b.guest_email === email || b.guest_phone === phone));
+      return hit ? { id: hit.id, checkin: hit.checkin, checkout: hit.checkout } : null;
+    },
+
     _findActive(checkin, checkout) {
       const nights = eachNight(checkin, checkout);
       const hit = bookings.find((b) => active(b) && (b.nightsList || []).some((n) => nights.includes(n)));

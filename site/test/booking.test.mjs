@@ -844,3 +844,60 @@ test('api: 入金記録はメモを壊さず現地支払予定と重複計上し
   await mod.default(ana3.req, ana3.res);
   assert.equal(ana3.res.payload.months[2].paidRevenue, 0, '入金取消で売上から外れる');
 });
+
+test('store: 同一連絡先の未完了仮予約を検出する（Issue #11）', async () => {
+  const s = await makeStore();
+  await seedBooking(s, '2027-09-01', '2027-09-02', { email: 'same@example.com', phone: '09000000001' });
+  const hit = await s.findActivePendingByContact('same@example.com', '09999999999');
+  assert.ok(hit, 'メール一致で検出');
+  assert.equal(hit.id.length > 0, true);
+  const hit2 = await s.findActivePendingByContact('other@example.com', '0773216424');
+  assert.ok(hit2, '電話一致でも検出');
+  const miss = await s.findActivePendingByContact('other@example.com', '09999999999');
+  assert.equal(miss, null, 'どちらも一致しなければ検出しない');
+  /* 期限切れ+猶予後は検出しない */
+  await s.expireStale(Date.now() + 31 * 60000);
+  await s.updateBooking((await s.listBookings({}))[0].id, { expires_at: Date.now() - 16 * 60000 });
+  const miss2 = await s.findActivePendingByContact('same@example.com', '09999999999');
+  assert.equal(miss2, null, '猶予後の期限切れは検出しない');
+});
+
+test('api: 同一連絡先の未完了仮予約があると pending_exists で409（Issue #11）', async () => {
+  globalThis.__enTestStore = await makeStore();
+  process.env.BOOKING_PAYMENTS_ENABLED = 'true';
+  process.env.STRIPE_SECRET_KEY = 'sk_test_dummy';
+  globalThis.__enTestStripe = {
+    checkout: { sessions: { create: async () => ({ id: 'cs_t', url: 'https://stripe.example/x' }), retrieve: async (id) => ({ id, status: 'open', url: 'https://stripe.example/x' }) } },
+  };
+  try {
+    const mod = await import('../api/booking.js');
+    /* 1件目は通る */
+    const r1 = makeReqRes('POST', '/api/booking', {
+      checkin: '2027-10-01', checkout: '2027-10-02', adults: 2, infants: 0,
+      name: '一郎', email: 'first@example.com', phone: '09011112222',
+      options: {}, paymentMethod: 'online', request_id: 'req-issue11-1',
+    });
+    await mod.default(r1.req, r1.res);
+    assert.equal(r1.res.statusCode, 200);
+    /* 同じメールで2件目は409 pending_exists */
+    const r2 = makeReqRes('POST', '/api/booking', {
+      checkin: '2027-10-05', checkout: '2027-10-06', adults: 2, infants: 0,
+      name: '一郎', email: 'first@example.com', phone: '09011112222',
+      options: {}, paymentMethod: 'online', request_id: 'req-issue11-2',
+    });
+    await mod.default(r2.req, r2.res);
+    assert.equal(r2.res.statusCode, 409);
+    assert.equal(r2.res.payload.error, 'pending_exists');
+    /* 別の連絡先なら通る */
+    const r3 = makeReqRes('POST', '/api/booking', {
+      checkin: '2027-10-05', checkout: '2027-10-06', adults: 2, infants: 0,
+      name: '二郎', email: 'second@example.com', phone: '09033334444',
+      options: {}, paymentMethod: 'online', request_id: 'req-issue11-3',
+    });
+    await mod.default(r3.req, r3.res);
+    assert.equal(r3.res.statusCode, 200, '別連絡先は影響しない: ' + JSON.stringify(r3.res.payload));
+  } finally {
+    delete globalThis.__enTestStore;
+    delete globalThis.__enTestStripe;
+  }
+});
