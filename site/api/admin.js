@@ -71,7 +71,7 @@ export default async function handler(req, res) {
       clearLoginFailures(username);
       const token = issueToken(username);
       /* ヘッダはレスポンス送信前に設定する（json()の後では無効になる） */
-      res.setHeader('Set-Cookie', 'en_admin=' + token + '; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=28800');
+      res.setHeader('Set-Cookie', 'en_admin=' + token + '; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=28800');
       json(res, 200, { ok: true, username: user.username, name: user.name });
       await store.logAdmin('login_success', { username });
     } catch (err) {
@@ -94,10 +94,18 @@ export default async function handler(req, res) {
     return;
   }
 
-  /* ---- CSRF: 変更系POSTはカスタムヘッダ必須 ---- */
-  if (req.method === 'POST' && !csrfOk(req)) {
-    json(res, 403, { error: 'csrf' });
-    return;
+  /* ---- CSRF: 読み取り専用以外は POST + カスタムヘッダ必須（Issue #5）。
+     GETでも実行できたキャンセル/返金/入金記録などを外部サイトの細工リンクから守る ---- */
+  const READ_ONLY_ACTIONS = new Set(['session.check', 'bookings.list', 'booking.get', 'blocked.list', 'calendar', 'settings.get', 'logs', 'analytics']);
+  if (!READ_ONLY_ACTIONS.has(action)) {
+    if (req.method !== 'POST') {
+      json(res, 405, { error: 'method_not_allowed' });
+      return;
+    }
+    if (!csrfOk(req)) {
+      json(res, 403, { error: 'csrf' });
+      return;
+    }
   }
 
   /* セッション確認のみ: DBに触れずCookie検証だけで即応答（管理画面の初期表示を高速化） */
