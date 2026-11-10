@@ -402,7 +402,7 @@
         if (!confirm('この予約をキャンセルしますか？日程は解放されます。')) return;
         await withBusy(btn, async () => {
           try {
-            await api('booking.cancel', { id });
+            await api('booking.cancel', { id }, {});
             setMsg('bookingMsg', 'キャンセルしました。日程は解放されています。', 'ok');
           } catch (e) {
             if (e.message === 'unauthorized') return;
@@ -414,7 +414,7 @@
       }
       if (a === 'refund') {
         if (!confirm('Stripeで返金し、予約を返金済みにしますか？')) return;
-        const d = await api('booking.refund', { id });
+        const d = await api('booking.refund', { id }, {});
         alert('返金しました（' + d.refund_id + '）');
         loadBookings();
         return;
@@ -423,7 +423,7 @@
         /* confirm()はアプリ内ブラウザで無効化されることがあるため使わない（冪等な操作なので誤操作の害も小さい） */
         await withBusy(btn, async () => {
           try {
-            await api('booking.mark-paid', { id });
+            await api('booking.mark-paid', { id }, {});
             setMsg('bookingMsg', '入金を記録しました。売上・分析に反映されています。', 'ok');
           } catch (e) {
             if (e.message === 'unauthorized') return;
@@ -436,7 +436,7 @@
       if (a === 'unmarkpaid') {
         await withBusy(btn, async () => {
           try {
-            await api('booking.unmark-paid', { id });
+            await api('booking.unmark-paid', { id }, {});
             setMsg('bookingMsg', '入金記録を取り消しました。売上・分析からも外れています。', 'ok');
           } catch (e) {
             if (e.message === 'unauthorized') return;
@@ -449,7 +449,7 @@
       if (a === 'resend') {
         await withBusy(btn, async () => {
           try {
-            await api('booking.resend-emails', { id });
+            await api('booking.resend-emails', { id }, {});
             setMsg('bookingMsg', '確認メールを再送しました。', 'ok');
           } catch (e) {
             if (e.message === 'unauthorized') return;

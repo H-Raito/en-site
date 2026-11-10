@@ -608,11 +608,11 @@ test('api: admin 手動予約は確定状態で登録・重複は409・analytics
   assert.equal(feb.onsiteDue, 96000);
   assert.ok(feb.occupancy > 0);
   /* 入金済みボタン: 記録→analyticsの入金済み売上に反映・二重押下は409 */
-  const paid = makeReqRes('GET', '/api/admin.js?action=booking.mark-paid&id=' + mk.res.payload.booking.id, null, H);
+  const paid = makeReqRes('POST', '/api/admin.js?action=booking.mark-paid&id=' + mk.res.payload.booking.id, {}, H);
   await mod.default(paid.req, paid.res);
   assert.equal(paid.res.statusCode, 200);
   assert.ok(paid.res.payload.booking.paid_at > 0);
-  const paid2 = makeReqRes('GET', '/api/admin.js?action=booking.mark-paid&id=' + mk.res.payload.booking.id, null, H);
+  const paid2 = makeReqRes('POST', '/api/admin.js?action=booking.mark-paid&id=' + mk.res.payload.booking.id, {}, H);
   await mod.default(paid2.req, paid2.res);
   assert.equal(paid2.res.statusCode, 409);
   const ana2 = makeReqRes('GET', '/api/admin.js?action=analytics&year=2027', null, H);
@@ -622,7 +622,7 @@ test('api: admin 手動予約は確定状態で登録・重複は409・analytics
   assert.equal(ana2.res.payload.totals.paidRevenue, 96000);
   assert.equal(ana2.res.payload.totals.paidTotal, 96000);
   /* 入金取消: 記録を外すと analytics からも外れる（再計上されない） */
-  const unmark = makeReqRes('GET', '/api/admin.js?action=booking.unmark-paid&id=' + mk.res.payload.booking.id, null, H);
+  const unmark = makeReqRes('POST', '/api/admin.js?action=booking.unmark-paid&id=' + mk.res.payload.booking.id, {}, H);
   await mod.default(unmark.req, unmark.res);
   assert.equal(unmark.res.statusCode, 200);
   assert.equal(unmark.res.payload.booking.paid_at, null);
@@ -631,10 +631,18 @@ test('api: admin 手動予約は確定状態で登録・重複は409・analytics
   assert.equal(ana3.res.payload.months[1].paidRevenue, 0);
   assert.equal(ana3.res.payload.totals.paidRevenue, 0);
   /* 未記録に対する取消は成功扱い（冪等） */
-  const unmark2 = makeReqRes('GET', '/api/admin.js?action=booking.unmark-paid&id=' + mk.res.payload.booking.id, null, H);
+  const unmark2 = makeReqRes('POST', '/api/admin.js?action=booking.unmark-paid&id=' + mk.res.payload.booking.id, {}, H);
   await mod.default(unmark2.req, unmark2.res);
   assert.equal(unmark2.res.statusCode, 200);
   assert.equal(unmark2.res.payload.already, true);
+  /* GETでの変更操作は405で拒否される（CSRF対策・Issue #5） */
+  const getByGet = makeReqRes('GET', '/api/admin.js?action=booking.mark-paid&id=' + mk.res.payload.booking.id, null, H);
+  await mod.default(getByGet.req, getByGet.res);
+  assert.equal(getByGet.res.statusCode, 405);
+  const chk = makeReqRes('GET', '/api/admin.js?action=booking.get&id=' + mk.res.payload.booking.id, null, H);
+  await mod.default(chk.req, chk.res);
+  const still = chk.res.payload.booking;
+  assert.equal(still.paid_at, null, 'GET呼び出しでは paid_at が変わらない');
 });
 
 test('email: 未設定時はskippedを返す（実通信なし）', async () => {
