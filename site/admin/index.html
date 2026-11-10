@@ -237,6 +237,7 @@
       'invalid guest info': 'お名前・メール・電話の入力に不備があります',
       'invalid booking': '対象の予約が確定状態ではありません',
       booking_closed: '受付期限を過ぎています。当日予約はチェックイン日の15:00までです',
+      not_manual: '入金記録は手動予約のみに付けられます',
       past_checkin: '過ぎた日付は登録できません',
       invalid_stay: '泊数の指定が不正です（1泊以上・28泊未満）',
       invalid_date: '日付の形式が不正です',
@@ -356,11 +357,11 @@
           if (b.status === 'cancelled' || b.status === 'refunded' || b.status === 'expired' || b.status === 'payment_failed') tr.className = 'dim';
           const payTag = b.source === 'manual' ? '<span class="pay-tag manual">手動・現地精算</span>'
             : (b.payment_method === 'onsite' ? '<span class="pay-tag onsite">現地払い</span>' : '<span class="pay-tag online">オンライン決済</span>');
-          const paidUi = (b.source === 'manual' && b.status === 'confirmed')
-            ? (b.paid_at
-               ? '<span class="paid-badge">入金済み</span> <button class="act" data-a="unmarkpaid" data-id="' + b.id + '">入金をキャンセル</button>'
-               : ' <button class="act" data-a="markpaid" data-id="' + b.id + '">入金済みにする</button>')
-            : '';
+          const paidUi = (b.source === 'manual' && b.paid_at)
+            ? '<span class="paid-badge">入金済み</span> <button class="act" data-a="unmarkpaid" data-id="' + b.id + '">入金をキャンセル</button>'
+            : (b.source === 'manual' && b.status === 'confirmed'
+               ? ' <button class="act" data-a="markpaid" data-id="' + b.id + '">入金済みにする</button>'
+               : '');
           tr.innerHTML = '<td data-label="予約番号">' + b.id + '</td>'
             + '<td data-label="状態"><span class="status s-' + b.status + '">' + (STATUS_JA[b.status] || b.status) + '</span></td>'
             + '<td data-label="チェックイン">' + b.checkin + '</td><td data-label="チェックアウト">' + b.checkout + '</td><td data-label="泊数">' + b.nights + '</td>'

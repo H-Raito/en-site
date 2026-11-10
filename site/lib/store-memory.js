@@ -142,13 +142,11 @@ export function createMemoryStore() {
       });
     },
 
-    async setBookingStatus(id, status, extra = {}) {
+    async setBookingStatus(id, status, _extra = null) {
       return lock(() => {
         const b = bookings.find((x) => x.id === id);
         if (!b) { const e = new Error('not found'); e.code = 'not_found'; throw e; }
         b.status = status;
-        if (extra.paymentIntentId) b.payment_intent_id = extra.paymentIntentId;
-        if (extra.memo != null) b.admin_memo = String(extra.memo).slice(0, 2000);
         b.updated_at = Date.now();
         return { ...b };
       });
@@ -166,31 +164,28 @@ export function createMemoryStore() {
         if (!b || b.status !== 'confirmed') return null;
         b.status = patch.status || b.status;
         if (patch.refund_amount != null) b.refund_amount = patch.refund_amount;
-        if (patch.admin_memo != null) b.admin_memo = patch.admin_memo;
         b.updated_at = Date.now();
         return { ...b };
       });
     },
 
-    /* 入金記録: confirmed のみ・冪等。返り値は null なら対象外 */
-    async markBookingPaid(id, memo) {
+    /* 入金記録: confirmed のみ・冪等。メモは書き換えない（Issue #10） */
+    async markBookingPaid(id) {
       return lock(() => {
         const b = bookings.find((x) => x.id === id);
         if (!b || b.status !== 'confirmed' || b.paid_at) return null;
         b.paid_at = Date.now();
-        if (memo != null) b.admin_memo = String(memo).slice(0, 2000);
         b.updated_at = Date.now();
         return { ...b };
       });
     },
 
-    /* 入金記録の取り消し。未記録なら null */
-    async unmarkBookingPaid(id, memo) {
+    /* 入金記録の取り消し: 記録があれば状態を問わず外せる（Issue #10） */
+    async unmarkBookingPaid(id) {
       return lock(() => {
         const b = bookings.find((x) => x.id === id);
-        if (!b || b.status !== 'confirmed' || !b.paid_at) return null;
+        if (!b || !b.paid_at) return null;
         b.paid_at = null;
-        if (memo != null) b.admin_memo = String(memo).slice(0, 2000);
         b.updated_at = Date.now();
         return { ...b };
       });

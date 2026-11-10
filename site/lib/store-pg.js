@@ -281,47 +281,43 @@ export function createPgStore(databaseUrl) {
       const pool = await db();
       const rows = await pool.query(
         `UPDATE bookings
-         SET status = $2, refund_amount = COALESCE($3, refund_amount),
-             admin_memo = COALESCE($4, admin_memo), updated_at = now()
+         SET status = $2, refund_amount = COALESCE($3, refund_amount), updated_at = now()
          WHERE id = $1 AND status = 'confirmed'
          RETURNING *`,
-        [id, patch.status || 'refunded', patch.refund_amount != null ? patch.refund_amount : null,
-         patch.admin_memo != null ? patch.admin_memo : null]
+        [id, patch.status || 'refunded', patch.refund_amount != null ? patch.refund_amount : null]
       );
       return rows.rows[0] ? rowToBooking(rows.rows[0]) : null;
     },
 
-    /* 入金記録: confirmed のみ・冪等（2回押しても paid_at は変わらない） */
-    async markBookingPaid(id, memo) {
+    /* 入金記録: confirmed のみ・冪等。メモは書き換えない（操作記録は admin_log に残る・Issue #10） */
+    async markBookingPaid(id) {
       const pool = await db();
       const rows = await pool.query(
-        `UPDATE bookings
-         SET paid_at = now(), admin_memo = COALESCE($2, admin_memo), updated_at = now()
+        `UPDATE bookings SET paid_at = now(), updated_at = now()
          WHERE id = $1 AND status = 'confirmed' AND paid_at IS NULL
          RETURNING *`,
-        [id, memo != null ? memo : null]
+        [id]
       );
       return rows.rows[0] ? rowToBooking(rows.rows[0]) : null;
     },
 
-    /* 入金記録の取り消し: confirmed かつ記録済みのときだけ（未記録なら null） */
-    async unmarkBookingPaid(id, memo) {
+    /* 入金記録の取り消し: 記録があれば状態を問わず外せる（キャンセル後の訂正も可能） */
+    async unmarkBookingPaid(id) {
       const pool = await db();
       const rows = await pool.query(
-        `UPDATE bookings
-         SET paid_at = NULL, admin_memo = COALESCE($2, admin_memo), updated_at = now()
-         WHERE id = $1 AND status = 'confirmed' AND paid_at IS NOT NULL
+        `UPDATE bookings SET paid_at = NULL, updated_at = now()
+         WHERE id = $1 AND paid_at IS NOT NULL
          RETURNING *`,
-        [id, memo != null ? memo : null]
+        [id]
       );
       return rows.rows[0] ? rowToBooking(rows.rows[0]) : null;
     },
 
-    async setBookingStatus(id, status, extra = {}) {
+    async setBookingStatus(id, status, _extra = null) {
       const pool = await db();
       const rows = await pool.query(
-        `UPDATE bookings SET status=$2, admin_memo=COALESCE($3, admin_memo), updated_at=now() WHERE id=$1 RETURNING *`,
-        [id, status, extra.memo != null ? String(extra.memo).slice(0, 2000) : null]
+        `UPDATE bookings SET status=$2, updated_at=now() WHERE id=$1 RETURNING *`,
+        [id, status]
       );
       if (!rows.rows[0]) { const e = new Error('not found'); e.code = 'not_found'; throw e; }
       return rowToBooking(rows.rows[0]);

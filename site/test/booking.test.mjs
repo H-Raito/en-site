@@ -789,3 +789,58 @@ test('booking: 支払い猶予内の期限切れ予約は確定でき、猶予�
   try { await store.confirmBooking(c.id, 'pi_late'); } catch (e) { refused = e.code === 'invalid_status'; }
   assert.equal(refused, true, '猶予後の確定は拒否');
 });
+
+test('api: 入金記録はメモを壊さず現地支払予定と重複計上しない（Issue #10）', async () => {
+  process.env.ADMIN_KEY = 'test-admin-key-0123456789abcdef-32chars';
+  process.env.ADMIN_SEED = 'サイト管理者:adminX:testpass123';
+  const mod = await import('../api/admin.js');
+  const H = { cookie: 'x', 'x-requested-with': 'XMLHttpRequest' };
+  const login = makeReqRes('POST', '/api/admin.js?action=login', { username: 'adminX', password: 'testpass123' }, H);
+  await mod.default(login.req, login.res);
+  H.cookie = login.res.hs['Set-Cookie'].replace(/; .*/, '');
+  /* 手動予約（3月・他テストと干渉しない日程） */
+  const mk = makeReqRes('POST', '/api/admin.js?action=booking.manual', {
+    action: 'booking.manual', checkin: '2027-03-01', checkout: '2027-03-02', adults: 2, infants: 0,
+    name: 'メモ太郎', email: 'memo@example.com', phone: '0773216424',
+  }, H);
+  await mod.default(mk.req, mk.res);
+  assert.equal(mk.res.statusCode, 200);
+  const id = mk.res.payload.booking.id;
+  /* メモ保存 → 入金記録 → メモ不変 */
+  const memo1 = makeReqRes('POST', '/api/admin.js?action=booking.memo', { action: 'booking.memo', id, memo: 'アレルギーあり' }, H);
+  await mod.default(memo1.req, memo1.res);
+  const mark = makeReqRes('POST', '/api/admin.js?action=booking.mark-paid&id=' + id, {}, H);
+  await mod.default(mark.req, mark.res);
+  assert.equal(mark.res.statusCode, 200);
+  const chk = makeReqRes('GET', '/api/admin.js?action=booking.get&id=' + id, null, H);
+  await mod.default(chk.req, chk.res);
+  assert.equal(chk.res.payload.booking.admin_memo, 'アレルギーあり', '入金記録でメモが壊れない');
+  /* analytics: 現地支払予定0・入金済み48000（どちらか一方だけに計上） */
+  const ana = makeReqRes('GET', '/api/admin.js?action=analytics&year=2027', null, H);
+  await mod.default(ana.req, ana.res);
+  const mar = ana.res.payload.months[2];
+  assert.equal(mar.onsiteDue, 0, '入金済みは現地支払予定に重複計上しない');
+  assert.equal(mar.paidRevenue, 48000);
+  /* Web予約のIDで mark-paid は400（手動予約のみ） */
+  const { getStore } = await import('../lib/store.js');
+  const moduleStore = await getStore();
+  const web = await seedBooking(moduleStore, '2027-03-10', '2027-03-11');
+  const bad = makeReqRes('POST', '/api/admin.js?action=booking.mark-paid&id=' + web.id, {}, H);
+  await mod.default(bad.req, bad.res);
+  assert.equal(bad.res.statusCode, 400);
+  assert.equal(bad.res.payload.error, 'not_manual');
+  /* 入金済みのままキャンセル → 実収入は残る・入金取消は可能 */
+  const cancel = makeReqRes('POST', '/api/admin.js?action=booking.cancel&id=' + id, {}, H);
+  await mod.default(cancel.req, cancel.res);
+  assert.equal(cancel.res.statusCode, 200);
+  const ana2 = makeReqRes('GET', '/api/admin.js?action=analytics&year=2027', null, H);
+  await mod.default(ana2.req, ana2.res);
+  assert.equal(ana2.res.payload.months[2].paidRevenue, 48000, 'キャンセル後も実収入として残る');
+  assert.equal(ana2.res.payload.months[2].cancellations, 1);
+  const unmark = makeReqRes('POST', '/api/admin.js?action=booking.unmark-paid&id=' + id, {}, H);
+  await mod.default(unmark.req, unmark.res);
+  assert.equal(unmark.res.statusCode, 200);
+  const ana3 = makeReqRes('GET', '/api/admin.js?action=analytics&year=2027', null, H);
+  await mod.default(ana3.req, ana3.res);
+  assert.equal(ana3.res.payload.months[2].paidRevenue, 0, '入金取消で売上から外れる');
+});

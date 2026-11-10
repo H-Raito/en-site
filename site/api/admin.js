@@ -238,6 +238,7 @@ async function routeAction(action, req, res, q, body, username, store) {
       const id = q.get('id') || '';
       const b = await store.getBooking(id);
       if (!b) { json(res, 404, { error: 'not_found' }); return; }
+      if (b.source !== 'manual') { json(res, 400, { error: 'not_manual' }); return; }
       if (b.status !== 'confirmed') { json(res, 400, { error: 'invalid booking' }); return; }
       /* 冪等: すでに記録済みなら 409（2回押しても二重計上されない） */
       const updated = await store.markBookingPaid(id, '入金記録(' + username + ')');
@@ -250,7 +251,7 @@ async function routeAction(action, req, res, q, body, username, store) {
       const id = q.get('id') || '';
       const b = await store.getBooking(id);
       if (!b) { json(res, 404, { error: 'not_found' }); return; }
-      if (b.status !== 'confirmed') { json(res, 400, { error: 'invalid booking' }); return; }
+      if (b.source !== 'manual') { json(res, 400, { error: 'not_manual' }); return; }
       /* 未記録に対しては何もせず成功扱い（冪等・取り消しは売上から自動で外れる） */
       const updated = await store.unmarkBookingPaid(id, '入金取消(' + username + ')');
       await store.logAdmin('booking_unmark_paid', { id, amount: b.onsite_amount, by: username, wasMarked: !!updated });
@@ -343,15 +344,22 @@ async function routeAction(action, req, res, q, body, username, store) {
         const m = parseInt(ci.slice(5, 7), 10);
         if (!(m >= 1 && m <= 12)) continue;
         const slot = months[m - 1];
-        if (b.status === 'confirmed') {
+        /* 手動予約は「未入金=現地支払予定」「入金済み=入金済み売上」のどちらか一方だけに計上する（Issue #10）。
+           入金記録はキャンセル後も実収入として残す（返金済みを除く。訂正は入金取消で行う） */
+        if (b.source === 'manual' && b.paid_at && (b.status === 'confirmed' || b.status === 'cancelled')) {
+          slot.paidRevenue += b.onsite_amount || 0;
+          if (b.status === 'confirmed') {
+            slot.bookings++; slot.nights += b.nights || 0; slot.guests += b.adults || 0; slot.manual++;
+          } else {
+            slot.cancellations++;
+          }
+        } else if (b.status === 'confirmed') {
           slot.bookings++;
           slot.nights += b.nights || 0;
           slot.guests += b.adults || 0;
           if (b.source === 'manual') {
             slot.manual++;
             slot.onsiteDue += b.onsite_amount || 0;
-            /* 入金記録済みの手動予約は売上（入金済み）に計上 */
-            if (b.paid_at) slot.paidRevenue += b.onsite_amount || 0;
           } else {
             slot.onlineRevenue += b.online_total || b.price_jpy || 0;
             slot.onsiteDue += b.onsite_amount || 0;
