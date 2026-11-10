@@ -452,16 +452,34 @@ test('api: booking-status は404/400/マスクを返す', async () => {
   delete globalThis.__enTestStore;
 });
 
-test('api: webhook は鍵未設定503・署名不正400', async () => {
+test('api: webhook は鍵未設定503・署名不正400・正しい署名で200確定（Issue #3）', async () => {
   const mod = await import('../api/stripe-webhook.js');
-  const { req, res } = makeReqRes('POST', '/api/stripe-webhook', {}, {});
-  await mod.default(req, res);
-  assert.equal(res.statusCode, 503);
+  /* 鍵未設定 */
+  let r = new Request('https://x/api/stripe-webhook', { method: 'POST', body: '{}', headers: { 'stripe-signature': 't=1,v1=bad' } });
+  let res = await mod.default.fetch(r);
+  assert.equal(res.status, 503);
   process.env.STRIPE_SECRET_KEY = 'sk_test_dummy';
   process.env.STRIPE_WEBHOOK_SECRET = 'whsec_dummy';
-  const { req: r2, res: s2 } = makeReqRes('POST', '/api/stripe-webhook', '{}', { 'stripe-signature': 't=1,v1=bad' });
-  await mod.default(r2, s2);
-  assert.equal(s2.statusCode, 400);
+  /* 署名不正 */
+  r = new Request('https://x/api/stripe-webhook', { method: 'POST', body: '{}', headers: { 'stripe-signature': 't=1,v1=bad' } });
+  res = await mod.default.fetch(r);
+  assert.equal(res.status, 400);
+  /* Stripeが送る整形付き本文でも、生本文に対する正しい署名なら200で確定まで進む */
+  const { default: Stripe } = await import('stripe');
+  const stripe = new Stripe('sk_test_dummy');
+  globalThis.__enTestStore = await makeStore();
+  const seed = await seedBooking(globalThis.__enTestStore, '2027-06-01', '2027-06-03');
+  const pretty = JSON.stringify({
+    id: 'evt_test_issue3', object: 'event', type: 'checkout.session.completed',
+    data: { object: { id: 'cs_x', object: 'checkout.session', client_reference_id: seed.id, payment_status: 'paid', payment_intent: 'pi_test_issue3' } },
+  }, null, 2);
+  const sig = await stripe.webhooks.generateTestHeaderString({ payload: pretty, secret: 'whsec_dummy', timestamp: Math.floor(Date.now() / 1000) });
+  r = new Request('https://x/api/stripe-webhook', { method: 'POST', body: pretty, headers: { 'stripe-signature': sig } });
+  res = await mod.default.fetch(r);
+  assert.equal(res.status, 200, '整形付き本文+正しい署名でも受理されるべき');
+  const confirmed = await globalThis.__enTestStore.getBooking(seed.id);
+  assert.equal(confirmed.status, 'confirmed');
+  delete globalThis.__enTestStore;
 });
 
 test('api: cron は秘密鍵不一致で401', async () => {
