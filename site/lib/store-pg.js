@@ -118,7 +118,11 @@ export function createPgStore(databaseUrl) {
     }
   }
 
-  const ACTIVE = "(status = 'confirmed' OR (status = 'pending_payment' AND (expires_at IS NULL OR expires_at > now())))";
+  /* 支払い猶予: expires_at を過ぎても15分は空きにせず、Webhookでの確定も許す（Issue #9）。
+     期限未設定の旧データ（pending_payment）は従来どおり常にアクティブ扱い */
+  const ACTIVE = `(status = 'confirmed'
+    OR (expires_at IS NOT NULL AND expires_at > now() - interval '15 minutes' AND status IN ('pending_payment', 'expired'))
+    OR (status = 'pending_payment' AND expires_at IS NULL))`;
 
   function rowToBooking(r) {
     return {
@@ -259,7 +263,8 @@ export function createPgStore(databaseUrl) {
         `UPDATE bookings
          SET status='confirmed', confirmed_at=now(), payment_intent_id=COALESCE($2, payment_intent_id),
              expires_at=NULL, updated_at=now()
-         WHERE id=$1 AND status='pending_payment'
+         WHERE id=$1 AND (status='pending_payment'
+            OR (status='expired' AND expires_at IS NOT NULL AND expires_at > now() - interval '15 minutes'))
          RETURNING *`,
         [id, paymentIntentId || null]
       );
