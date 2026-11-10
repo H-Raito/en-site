@@ -132,11 +132,13 @@ pending_payment ──Webhook(paid) or verify(paid)──▶ confirmed ──返
 ## 排他制御（二重予約防止）
 
 createPendingBooking は Postgres トランザクション内で:
-1. 対象期間と重複するアクティブ予約を行ロック（`FOR UPDATE`）
-2. 期間内の受付停止日を照合
-3. 競合があれば 'unavailable' でロールバック
-4. 競合なしなら INSERT（pending_payment・expires_at=now()+30分）
+1. `pg_advisory_xact_lock(1)` で予約作成を直列化（FOR UPDATE は行が無いと効かないため・Issue #8）
+2. 対象期間と重複するアクティブ予約を照合
+3. 期間内の受付停止日を照合
+4. 競合があれば 'unavailable' でロールバック
+5. 競合なしなら INSERT（pending_payment・expires_at=now()+30分）
 
+受付停止（addBlockedRange）も同じ鍵を取るため、予約と受付停止の同時実行も直列化される。
 アクティブ = confirmed または (pending_payment かつ expires_at > now())。
 期限判定はクエリごとに行うため、Cron遅延でも整合する。
 メモリストアは直列化ミューテックスで同等の排他を提供（テスト専用）。

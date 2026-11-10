@@ -170,6 +170,10 @@ export function createPgStore(databaseUrl) {
 
     async createPendingBooking(rec) {
       return tx(async (q) => {
+        /* 同一日程への同時作成を直列化する。FOR UPDATE は「見つかった行」にしか
+           掛からないため、空き日は0件で鍵が無く二重予約になりうる（Issue #8）。
+           予約作成者は全員が先に同じ番号の鍵を取り、待った後の検索で重複を判定する */
+        await q('SELECT pg_advisory_xact_lock(1)');
         const overlap = await q(
           `SELECT id FROM bookings
            WHERE ${ACTIVE}
@@ -371,14 +375,17 @@ export function createPgStore(databaseUrl) {
     },
 
     async addBlockedRange(from, to, reason) {
-      const pool = await db();
-      await pool.query(
-        `INSERT INTO blocked_dates (date, reason)
-         SELECT d::date, $3 FROM generate_series($1::date, $2::date, interval '1 day') d
-         ON CONFLICT (date) DO NOTHING`,
-        [from, to, reason || '']
-      );
-      return true;
+      /* 予約作成と同じ鍵を取ることで、予約と受付停止の同時実行も直列化する（Issue #8） */
+      return tx(async (q) => {
+        await q('SELECT pg_advisory_xact_lock(1)');
+        await q(
+          `INSERT INTO blocked_dates (date, reason)
+           SELECT d::date, $3 FROM generate_series($1::date, $2::date, interval '1 day') d
+           ON CONFLICT (date) DO NOTHING`,
+          [from, to, reason || '']
+        );
+        return true;
+      });
     },
 
     async removeBlockedRange(from, to) {
