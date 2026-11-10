@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS admin_users (
   username TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   pass_hash TEXT NOT NULL,
+  disabled BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE TABLE IF NOT EXISTS admin_log (
@@ -76,6 +77,7 @@ CREATE TABLE IF NOT EXISTS admin_log (
 );
 /* 既存DBへのマイグレーション（CREATE TABLE IF NOT EXISTSは列追加を行わないため） */
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS paid_at TIMESTAMPTZ;
+ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS disabled BOOLEAN NOT NULL DEFAULT false;
 `;
 
 export function createPgStore(databaseUrl) {
@@ -466,8 +468,26 @@ export function createPgStore(databaseUrl) {
 
     async getAdminUser(username) {
       const pool = await db();
-      const rows = await pool.query(`SELECT username, name, pass_hash FROM admin_users WHERE username = $1`, [username]);
-      return rows.rows[0] ? { username: rows.rows[0].username, name: rows.rows[0].name, passHash: rows.rows[0].pass_hash } : null;
+      const rows = await pool.query(`SELECT username, name, pass_hash, disabled FROM admin_users WHERE username = $1`, [username]);
+      return rows.rows[0] ? { username: rows.rows[0].username, name: rows.rows[0].name, passHash: rows.rows[0].pass_hash, disabled: !!rows.rows[0].disabled } : null;
+    },
+
+    async updateAdminPassword(username, passHash) {
+      const pool = await db();
+      await pool.query(`UPDATE admin_users SET pass_hash = $2 WHERE username = $1`, [username, passHash]);
+      return true;
+    },
+
+    async setAdminDisabled(username, disabled) {
+      const pool = await db();
+      await pool.query(`UPDATE admin_users SET disabled = $2 WHERE username = $1`, [username, disabled]);
+      return true;
+    },
+
+    async listAdmins() {
+      const pool = await db();
+      const rows = await pool.query(`SELECT username, name, disabled FROM admin_users ORDER BY created_at`);
+      return rows.rows.map((r) => ({ username: r.username, name: r.name, disabled: !!r.disabled }));
     },
   };
   return store;

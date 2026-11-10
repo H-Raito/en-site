@@ -108,7 +108,7 @@ export default async function handler(req, res) {
 
   /* ---- CSRF: 読み取り専用以外は POST + カスタムヘッダ必須（Issue #5）。
      GETでも実行できたキャンセル/返金/入金記録などを外部サイトの細工リンクから守る ---- */
-  const READ_ONLY_ACTIONS = new Set(['session.check', 'bookings.list', 'booking.get', 'blocked.list', 'calendar', 'settings.get', 'logs', 'analytics']);
+  const READ_ONLY_ACTIONS = new Set(['session.check', 'bookings.list', 'booking.get', 'blocked.list', 'calendar', 'settings.get', 'logs', 'analytics', 'admin.list']);
   if (!READ_ONLY_ACTIONS.has(action)) {
     if (req.method !== 'POST') {
       json(res, 405, { error: 'method_not_allowed' });
@@ -131,6 +131,12 @@ export default async function handler(req, res) {
     store = await getStore();
   } catch (err) {
     json(res, 503, { error: 'not_configured' });
+    return;
+  }
+  /* セッションの管理者が実在し有効か確認（無効化された管理者のクッキーを即時無効化・Issue #12） */
+  const me = await store.getAdminUser(username);
+  if (!me || me.disabled) {
+    json(res, 401, { error: 'unauthorized' });
     return;
   }
 
@@ -323,6 +329,38 @@ async function routeAction(action, req, res, q, body, username, store) {
       await store.saveSettings({ cancellationPolicyText: capStr((body && body.cancellationPolicyText) || '', 2000) });
       await store.logAdmin('settings_save', { by: username });
       json(res, 200, { ok: true });
+      return;
+    }
+    case 'account.change-password': {
+      const cur = String((body && body.current) || '');
+      const next = String((body && body.next) || '');
+      if (String(next).length < 12) { json(res, 400, { error: 'weak_password' }); return; }
+      const meUser = await store.getAdminUser(username);
+      if (!meUser || meUser.disabled || !verifyPassword(cur, meUser.passHash)) { json(res, 400, { error: 'invalid_credentials' }); return; }
+      await store.updateAdminPassword(username, hashPassword(next));
+      await store.logAdmin('password_changed', { by: username });
+      json(res, 200, { ok: true });
+      return;
+    }
+    case 'admin.list': {
+      json(res, 200, { admins: await store.listAdmins() });
+      return;
+    }
+    case 'admin.set-enabled': {
+      const target = capStr(String((body && body.username) || ''), 40);
+      const disabled = !!(body && body.disabled);
+      if (!target) { json(res, 400, { error: 'invalid input' }); return; }
+      if (target === username && disabled) { json(res, 400, { error: 'cannot_disable_self' }); return; }
+      const targetUser = await store.getAdminUser(target);
+      if (!targetUser) { json(res, 404, { error: 'not_found' }); return; }
+      if (disabled && !targetUser.disabled) {
+        const admins = await store.listAdmins();
+        const enabledOthers = admins.filter((a) => !a.disabled && a.username !== target).length;
+        if (enabledOthers === 0) { json(res, 400, { error: 'last_admin' }); return; }
+      }
+      await store.setAdminDisabled(target, disabled);
+      await store.logAdmin(disabled ? 'admin_disabled' : 'admin_enabled', { target, by: username });
+      json(res, 200, { ok: true, admins: await store.listAdmins() });
       return;
     }
     case 'logs': {

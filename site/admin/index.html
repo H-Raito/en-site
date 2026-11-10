@@ -206,6 +206,20 @@
 
       <div id="tab-settings" hidden>
         <div class="card">
+          <h2>パスワード変更</h2>
+          <div class="row">
+            <div><label>現在のパスワード</label><input type="password" id="pwCur" style="width:200px"></div>
+            <div><label>新しいパスワード（12文字以上）</label><input type="password" id="pwNext" style="width:200px"></div>
+            <button class="act" id="pwSave">変更する</button>
+          </div>
+          <p class="msg" id="pwMsg"></p>
+        </div>
+        <div class="card">
+          <h2>管理者アカウント</h2>
+          <table><tbody id="adminRows"></tbody></table>
+          <p class="muted">無効化した管理者はログイン・操作ができなくなります（再度有効化できます）。最後の有効な管理者は無効化できません。</p>
+        </div>
+        <div class="card">
           <h2>キャンセルポリシー文（予約確認画面に表示）</h2>
           <textarea id="cancelText" rows="4" placeholder="正式なキャンセルポリシーを確定後、ここに入力すると予約確認画面に表示されます"></textarea>
           <button class="act" id="saveCancel">保存する</button>
@@ -238,6 +252,9 @@
       'invalid booking': '対象の予約が確定状態ではありません',
       booking_closed: '受付期限を過ぎています。当日予約はチェックイン日の15:00までです',
       not_manual: '入金記録は手動予約のみに付けられます',
+      weak_password: '新しいパスワードは12文字以上にしてください',
+      cannot_disable_self: '自分自身は無効化できません',
+      last_admin: '最後の有効な管理者は無効化できません',
       past_checkin: '過ぎた日付は登録できません',
       invalid_stay: '泊数の指定が不正です（1泊以上・28泊未満）',
       invalid_date: '日付の形式が不正です',
@@ -630,9 +647,55 @@
           tr.innerHTML = '<td data-label="日時">' + new Date(l.created_at).toLocaleString('ja-JP') + '</td><td data-label="操作">' + esc(l.action) + '</td><td data-label="詳細">' + esc(JSON.stringify(l.detail || '')) + '</td>';
           tb.appendChild(tr);
         });
+        await loadAdmins();
       } catch (e) {
         if (e.message === 'unauthorized') return;
         setMsg('setMsg', '読み込みに失敗しました: ' + e.message, 'err');
+      }
+    }
+    $('pwSave').addEventListener('click', function () {
+      withBusy($('pwSave'), async () => {
+        if (!$('pwNext').value || $('pwNext').value.length < 12) {
+          setMsg('pwMsg', '新しいパスワードは12文字以上にしてください', 'err');
+          return;
+        }
+        try {
+          await api('account.change-password', {}, { current: $('pwCur').value, next: $('pwNext').value });
+          setMsg('pwMsg', 'パスワードを変更しました。次回から新しいパスワードでログインしてください', 'ok');
+          $('pwCur').value = '';
+          $('pwNext').value = '';
+        } catch (e) {
+          if (e.message === 'unauthorized') return;
+          setMsg('pwMsg', '変更に失敗しました: ' + e.message, 'err');
+        }
+      });
+    });
+
+    async function loadAdmins() {
+      try {
+        const d = await api('admin.list');
+        const tb = $('adminRows');
+        tb.innerHTML = d.admins.map(function (a) {
+          return '<tr><td data-label="ユーザー名">' + esc(a.username) + '（' + esc(a.name) + '）</td>'
+            + '<td data-label="状態">' + (a.disabled ? '<span class="status s-cancelled">無効</span>' : '<span class="status s-confirmed">有効</span>') + '</td>'
+            + '<td data-label="操作"><button class="act" data-u="' + esc(a.username) + '" data-dis="' + (a.disabled ? 'false' : 'true') + '">' + (a.disabled ? '有効化' : '無効化') + '</button></td></tr>';
+        }).join('');
+        tb.querySelectorAll('button').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            withBusy(btn, async () => {
+              try {
+                await api('admin.set-enabled', {}, { username: btn.dataset.u, disabled: btn.dataset.dis === 'true' });
+                await loadAdmins();
+              } catch (e) {
+                if (e.message === 'unauthorized') return;
+                setMsg('pwMsg', '変更に失敗しました: ' + e.message, 'err');
+              }
+            });
+          });
+        });
+      } catch (e) {
+        if (e.message === 'unauthorized') return;
+        setMsg('pwMsg', '一覧の取得に失敗しました: ' + e.message, 'err');
       }
     }
     $('saveCancel').addEventListener('click', function () {

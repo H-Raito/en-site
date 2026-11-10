@@ -287,7 +287,22 @@ export function createMemoryStore() {
 
     async getAdminUser(username) {
       const u = adminUsers.get(username);
-      return u ? { ...u } : null;
+      return u ? { ...u, disabled: !!u.disabled } : null;
+    },
+
+    async updateAdminPassword(username, passHash) {
+      adminUsers.set(username, { ...adminUsers.get(username), passHash });
+      return true;
+    },
+
+    async setAdminDisabled(username, disabled) {
+      const u = adminUsers.get(username);
+      if (u) { u.disabled = disabled; }
+      return true;
+    },
+
+    async listAdmins() {
+      return [...adminUsers.values()].map((u) => ({ username: u.username, name: u.name, disabled: !!u.disabled }));
     },
 
     async logAdmin(action, detail) {
