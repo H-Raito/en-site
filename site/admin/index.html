@@ -287,6 +287,39 @@
       }
     }
 
+    /* 一覧の行操作を共通化（withBusy→API→ok確認→メッセージ→再読込・Issue #13）。
+       confirm を指定すると1回目の押下でボタンが確認表示になり、もう一度押すと実行する */
+    async function runRowOp(btn, action, id, opts) {
+      opts = opts || {};
+      if (opts.confirm && btn.dataset.armed !== '1') {
+        btn.dataset.armed = '1';
+        btn.dataset.origText = btn.textContent;
+        btn.textContent = opts.confirm;
+        btn.style.background = '#F3E7E7';
+        setTimeout(function () {
+          if (btn.dataset.armed === '1') { btn.dataset.armed = '0'; btn.textContent = btn.dataset.origText; btn.style.background = ''; }
+        }, 4000);
+        return;
+      }
+      btn.dataset.armed = '0';
+      btn.style.background = '';
+      await withBusy(btn, async () => {
+        try {
+          const d = await api(action, { id }, {});
+          if (d && d.ok === false) {
+            setMsg('bookingMsg', (opts.errPrefix || '処理に失敗しました') + ': ' + (d.error || '理由不明'), 'err');
+          } else {
+            const msg = typeof opts.success === 'function' ? opts.success(d) : (opts.successMsg || '処理しました');
+            setMsg('bookingMsg', msg, 'ok');
+          }
+        } catch (e) {
+          if (e.message === 'unauthorized') return;
+          setMsg('bookingMsg', (opts.errPrefix || '処理に失敗しました') + ': ' + e.message, 'err');
+        }
+        await loadBookings();
+      });
+    }
+
     async function api(action, params, body) {
       inflight++;
       $('loadbar').classList.add('run');
@@ -373,7 +406,11 @@
           const tr = document.createElement('tr');
           if (b.status === 'cancelled' || b.status === 'refunded' || b.status === 'expired' || b.status === 'payment_failed') tr.className = 'dim';
           const payTag = b.source === 'manual' ? '<span class="pay-tag manual">手動・現地精算</span>'
-            : (b.payment_method === 'onsite' ? '<span class="pay-tag onsite">現地払い</span>' : '<span class="pay-tag online">オンライン決済</span>');
+            : (b.payment_method === 'onsite' ? '<span class="pay-tag onsite">現地払い（宿泊料は決済済み）</span>' : '<span class="pay-tag online">オンライン決済</span>');
+          let payAmount = '¥' + (b.price_jpy || 0).toLocaleString();
+          if (b.source !== 'manual' && b.payment_method === 'onsite' && (b.onsite_amount || 0) > 0) {
+            payAmount = '決済済み ¥' + (b.online_total || 0).toLocaleString() + ' ／ 現地 ¥' + (b.onsite_amount || 0).toLocaleString();
+          }
           const paidUi = (b.source === 'manual' && b.paid_at)
             ? '<span class="paid-badge">入金済み</span> <button class="act" data-a="unmarkpaid" data-id="' + b.id + '">入金をキャンセル</button>'
             : (b.source === 'manual' && b.status === 'confirmed'
@@ -385,7 +422,7 @@
             + '<td data-label="人数">' + b.adults + '名' + (b.infants ? '+' + b.infants + '名(乳幼児)' : '') + '</td>'
             + '<td class="wrap" data-label="お名前">' + esc(b.guest_name) + '</td>'
             + '<td class="wrap" data-label="連絡先">' + esc(b.guest_email) + '<br>' + esc(b.guest_phone) + '</td>'
-            + '<td data-label="支払い">' + payTag + ' ¥' + (b.price_jpy || 0).toLocaleString() + paidUi + '</td>'
+            + '<td data-label="支払い">' + payTag + ' ' + payAmount + paidUi + '</td>'
             + '<td>'
             + '<button class="act" data-a="detail" data-id="' + b.id + '">詳細</button>'
             + (b.status === 'confirmed' ? '<button class="act" data-a="cancel" data-id="' + b.id + '">キャンセル</button>' : '')
@@ -423,63 +460,39 @@
         return;
       }
       if (a === 'cancel') {
-        if (!confirm('この予約をキャンセルしますか？日程は解放されます。')) return;
-        await withBusy(btn, async () => {
-          try {
-            await api('booking.cancel', { id }, {});
-            setMsg('bookingMsg', 'キャンセルしました。日程は解放されています。', 'ok');
-          } catch (e) {
-            if (e.message === 'unauthorized') return;
-            setMsg('bookingMsg', 'キャンセルに失敗しました: ' + e.message, 'err');
-          }
-          await loadBookings();
+        await runRowOp(btn, 'booking.cancel', id, {
+          confirm: 'もう一度押すとキャンセルします',
+          successMsg: 'キャンセルしました。日程は解放されています。',
+          errPrefix: 'キャンセルに失敗しました',
         });
         return;
       }
       if (a === 'refund') {
-        if (!confirm('Stripeで返金し、予約を返金済みにしますか？')) return;
-        const d = await api('booking.refund', { id }, {});
-        alert('返金しました（' + d.refund_id + '）');
-        loadBookings();
+        await runRowOp(btn, 'booking.refund', id, {
+          confirm: 'もう一度押すとStripeで返金します',
+          success: function (d) { return '返金しました（' + (d.refund_id || '処理中') + '）'; },
+          errPrefix: '返金に失敗しました',
+        });
         return;
       }
       if (a === 'markpaid') {
-        /* confirm()はアプリ内ブラウザで無効化されることがあるため使わない（冪等な操作なので誤操作の害も小さい） */
-        await withBusy(btn, async () => {
-          try {
-            await api('booking.mark-paid', { id }, {});
-            setMsg('bookingMsg', '入金を記録しました。売上・分析に反映されています。', 'ok');
-          } catch (e) {
-            if (e.message === 'unauthorized') return;
-            setMsg('bookingMsg', '記録に失敗しました: ' + e.message, 'err');
-          }
-          await loadBookings();
+        await runRowOp(btn, 'booking.mark-paid', id, {
+          successMsg: '入金を記録しました。売上・分析に反映されています。',
+          errPrefix: '記録に失敗しました',
         });
         return;
       }
       if (a === 'unmarkpaid') {
-        await withBusy(btn, async () => {
-          try {
-            await api('booking.unmark-paid', { id }, {});
-            setMsg('bookingMsg', '入金記録を取り消しました。売上・分析からも外れています。', 'ok');
-          } catch (e) {
-            if (e.message === 'unauthorized') return;
-            setMsg('bookingMsg', '取り消しに失敗しました: ' + e.message, 'err');
-          }
-          await loadBookings();
+        await runRowOp(btn, 'booking.unmark-paid', id, {
+          successMsg: '入金記録を取り消しました。売上・分析からも外れています。',
+          errPrefix: '取り消しに失敗しました',
         });
         return;
       }
       if (a === 'resend') {
-        await withBusy(btn, async () => {
-          try {
-            await api('booking.resend-emails', { id }, {});
-            setMsg('bookingMsg', '確認メールを再送しました。', 'ok');
-          } catch (e) {
-            if (e.message === 'unauthorized') return;
-            setMsg('bookingMsg', '再送に失敗しました: ' + e.message, 'err');
-          }
-          await loadBookings();
+        await runRowOp(btn, 'booking.resend-emails', id, {
+          successMsg: '確認メールを再送しました。',
+          errPrefix: '再送に失敗しました',
         });
         return;
       }
