@@ -323,7 +323,13 @@
         } catch (e) { $('loginMsg').textContent = '接続エラー。回線状況を確認して再試行してください'; }
       });
     });
-    $('logoutBtn').addEventListener('click', () => { document.cookie = 'en_admin=; Max-Age=0; Path=/'; showLogin(); });
+    $('logoutBtn').addEventListener('click', function () {
+      /* HttpOnlyクッキーはJSから消せないため、サーバーのlogoutで無効化する（Issue #6） */
+      withBusy($('logoutBtn'), async () => {
+        try { await api('logout', {}, {}); } catch (e) { /* セッション切れでも画面はログインへ */ }
+        showLogin();
+      });
+    });
 
     document.querySelectorAll('.tabs button').forEach((b) => {
       b.addEventListener('click', () => {

@@ -87,6 +87,17 @@ export default async function handler(req, res) {
     return;
   }
 
+  /* ---- ログアウト: サーバーがクッキーを無効化する（HttpOnlyはJSから消せない・Issue #6） ---- */
+  if (action === 'logout') {
+    if (req.method !== 'POST' || !csrfOk(req)) {
+      json(res, 403, { error: 'csrf' });
+      return;
+    }
+    res.setHeader('Set-Cookie', 'en_admin=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0');
+    json(res, 200, { ok: true });
+    return;
+  }
+
   /* ---- 認証 ---- */
   const username = isAdmin(req);
   if (!username) {
