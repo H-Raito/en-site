@@ -482,12 +482,22 @@ test('api: webhook は鍵未設定503・署名不正400・正しい署名で200�
   delete globalThis.__enTestStore;
 });
 
-test('api: cron は秘密鍵不一致で401', async () => {
-  process.env.CRON_SECRET = 's3cret';
+test('api: cron は Authorization Bearer のみ受け付ける（Issue #4）', async () => {
+  process.env.CRON_SECRET = 's3cret-value-2026';
   const mod = await import('../api/cron.js');
-  const { req, res } = makeReqRes('GET', '/api/cron?key=wrong');
-  await mod.default(req, res);
-  assert.equal(res.statusCode, 401);
+  /* ヘッダなし・誤値・URLクエリは401（URLに鍵を出す経路は廃止） */
+  for (const [url, headers, expect] of [
+    ['/api/cron', {}, 401],
+    ['/api/cron', { authorization: 'Bearer wrong' }, 401],
+    ['/api/cron?key=s3cret-value-2026', {}, 401],
+    ['/api/cron', { authorization: 'Bearer s3cret-value-2026' }, 200],
+  ]) {
+    globalThis.__enTestStore = await makeStore();
+    const { req, res } = makeReqRes('GET', url, null, headers);
+    await mod.default(req, res);
+    assert.equal(res.statusCode, expect, url + ' ' + JSON.stringify(headers));
+    delete globalThis.__enTestStore;
+  }
 });
 
 test('api: admin 未認証401・CSRF拒否・ログイン後に操作', async () => {
