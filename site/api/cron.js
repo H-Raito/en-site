@@ -4,6 +4,14 @@ import { getStore } from '../lib/store.js';
 import { confirmAndNotify } from '../lib/confirm.js';
 import { tokyoToday, eachNight } from '../lib/util.js';
 import { emailConfigured, emailConfig } from '../lib/email.js';
+import { timingSafeEqual } from 'node:crypto';
+
+/* 長さ違いでも例外を出さないタイミング安全比較 */
+function timingSafeEq(a, b) {
+  const ab = Buffer.from(String(a));
+  const bb = Buffer.from(String(b));
+  return ab.length === bb.length && timingSafeEqual(ab, bb);
+}
 
 export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET || '';
@@ -11,9 +19,10 @@ export default async function handler(req, res) {
     res.status(503).json({ error: 'cron not configured' });
     return;
   }
-  const q = new URLSearchParams((req.url.split('?')[1]) || '');
-  const provided = (req.headers && req.headers['x-cron-secret']) || q.get('key') || '';
-  if (provided !== secret) {
+  /* Vercel Cron は Authorization: Bearer で CRON_SECRET を送る。URLクエリは記録に残るため受け付けない（Issue #4） */
+  const auth = String((req.headers && (req.headers.authorization || req.headers['Authorization'])) || '');
+  const bearer = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  if (!timingSafeEq(bearer, secret)) {
     res.status(401).json({ error: 'unauthorized' });
     return;
   }
