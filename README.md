@@ -38,7 +38,7 @@ npm test
 ## コードリーディングのポイント
 
 - 料金・キャンセルポリシーは `site/lib/pricing.js` に一元管理
-- 二重予約防止はトランザクション内の `FOR UPDATE` 行ロック + 半開区間 [checkin, checkout) 照合
+- 二重予約防止はトランザクション内の `pg_advisory_xact_lock` による直列化 + 半開区間 [checkin, checkout) 照合
 - 決済は Webhook を正式確定経路とし、verify API と冪等に二重化
 - 管理画面（`/admin/`）: 予約一覧・月表示カレンダー・受付停止・手動予約・入金記録・売上分析
 
