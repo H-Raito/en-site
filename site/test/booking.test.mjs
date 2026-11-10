@@ -501,7 +501,7 @@ test('api: cron は Authorization Bearer のみ受け付ける（Issue #4）', a
 });
 
 test('api: admin 未認証401・CSRF拒否・ログイン後に操作', async () => {
-  process.env.ADMIN_KEY = 'test-admin-key-123';
+  process.env.ADMIN_KEY = 'test-admin-key-0123456789abcdef-32chars';
   process.env.ADMIN_SEED = 'サイト管理者:admin:testpass123,施設オーナー:owner:testpass456';
   const mod = await import('../api/admin.js');
   const noauth = makeReqRes('GET', '/api/admin.js?action=bookings.list');
@@ -538,7 +538,7 @@ test('api: admin 未認証401・CSRF拒否・ログイン後に操作', async ()
 });
 
 test('api: admin session.check はDB未設定でも200（Cookie検証のみ・DB参照しない）', async () => {
-  process.env.ADMIN_KEY = 'test-admin-key-123';
+  process.env.ADMIN_KEY = 'test-admin-key-0123456789abcdef-32chars';
   const prevDb = process.env.DATABASE_URL;
   const prevVercel = process.env.VERCEL;
   delete process.env.DATABASE_URL;
@@ -575,7 +575,7 @@ test('api: admin session.check はDB未設定でも200（Cookie検証のみ・DB
 });
 
 test('api: admin 手動予約は確定状態で登録・重複は409・analytics集計', async () => {
-  process.env.ADMIN_KEY = 'test-admin-key-123';
+  process.env.ADMIN_KEY = 'test-admin-key-0123456789abcdef-32chars';
   process.env.ADMIN_SEED = 'サイト管理者:admin2:testpass123';
   const mod = await import('../api/admin.js');
   const H = { cookie: 'x', 'x-requested-with': 'XMLHttpRequest' };
@@ -723,7 +723,7 @@ test('api: 決済ONで予約作成が500にならずprice_detailに人数・泊�
 });
 
 test('api: admin logout はサーバーでクッキーを無効化する（Issue #6）', async () => {
-  process.env.ADMIN_KEY = 'test-admin-key-123';
+  process.env.ADMIN_KEY = 'test-admin-key-0123456789abcdef-32chars';
   const { issueToken } = await import('../lib/admin-auth.js');
   const mod = await import('../api/admin.js');
   const cookie = 'en_admin=' + issueToken('admin');
@@ -737,4 +737,24 @@ test('api: admin logout はサーバーでクッキーを無効化する（Issue
   const r2 = makeReqRes('POST', '/api/admin.js?action=logout', {}, { cookie });
   await mod.default(r2.req, r2.res);
   assert.equal(r2.res.statusCode, 403);
+});
+
+test('auth: x-admin-key の裏口は撤去済み・ADMIN_KEY は32文字以上必須（Issue #7）', async () => {
+  const { adminEnabled, isAdmin, verifyToken } = await import('../lib/admin-auth.js');
+  const prev = process.env.ADMIN_KEY;
+  try {
+    /* 32文字未満の鍵では管理機能全体が無効 */
+    process.env.ADMIN_KEY = 'short-key-123';
+    assert.equal(adminEnabled(), false);
+    assert.equal(verifyToken('1.admin.x'), null);
+    /* 有効な署名クッキーでも x-admin-key ヘッダでは通らない */
+    process.env.ADMIN_KEY = 'a'.repeat(32);
+    const { issueToken } = await import('../lib/admin-auth.js');
+    const cookie = 'en_admin=' + issueToken('admin');
+    assert.equal(isAdmin({ headers: { cookie } }), 'admin');
+    assert.equal(isAdmin({ headers: { cookie, 'x-admin-key': 'a'.repeat(32) } }), 'admin');
+    assert.equal(isAdmin({ headers: { 'x-admin-key': 'a'.repeat(32) } }), null, 'ヘッダのみでは管理者になれない');
+  } finally {
+    if (prev === undefined) delete process.env.ADMIN_KEY; else process.env.ADMIN_KEY = prev;
+  }
 });

@@ -10,7 +10,7 @@
 - 決済結果は **Stripe Webhook** が正式経路（ブラウザが戻らなくても確定）
 - 予約データは **Neon Postgres**（`DATABASE_URL`）に保存
 - 確認メールは **EmailJS REST**（サーバー送信・ブラウザ非依存）
-- 管理画面: `https://<サイト>/admin/`（ADMIN_KEYでログイン）
+- 管理画面: `https://<サイト>/admin/`（ユーザー名とパスワードでログイン。アカウントは ADMIN_SEED から初期投入）
 
 ## 本番稼働までのチェックリスト
 
@@ -39,7 +39,8 @@
 
 ### 4. 管理・運用
 
-1. `ADMIN_KEY`（12文字以上のランダム文字列）を Vercel に設定 → `/admin/` にログイン
+1. `ADMIN_KEY`（32文字以上のランダム文字列・署名鍵として使用）を Vercel に設定
+2. `ADMIN_SEED`（`表示名:ユーザー名:パスワード,...` 形式）を Vercel に設定 → `/admin/` にユーザー名とパスワードでログイン
 2. 運営者ダッシュボードで: 予約一覧 / カレンダー / 受付停止 / 手動予約 / キャンセル・返金 / メール再送
 
 ### 5. 料金・ポリシーの確定（最重要）
@@ -73,6 +74,6 @@ BOOKING_PAYMENTS_ENABLED=true
 
 ## セキュリティ
 
-- 秘密鍵（STRIPE_SECRET_KEY / ADMIN_KEY / EMAILJS_PRIVATE_KEY）は Vercel 環境変数でのみ管理
+- 秘密鍵（STRIPE_SECRET_KEY / ADMIN_KEY / ADMIN_SEED / EMAILJS_PRIVATE_KEY）は Vercel 環境変数でのみ管理。管理画面にはユーザー名とパスワードでログインする（鍵を人に渡さない）
 - 管理APIは全操作でサーバー側認証（x-admin-key / 署名付きクッキー）
 - 個人情報は自社データベースにのみ保存（Stripe metadataには予約IDのみ）

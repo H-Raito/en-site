@@ -14,7 +14,8 @@ function key() {
 }
 
 export function adminEnabled() {
-  return key().length >= 8;
+  /* 署名鍵としての強度を保つため32文字以上を必須にする（LAUNCH_CHECKLISTに準拠・Issue #7） */
+  return key().length >= 32;
 }
 
 /* 管理者アカウントの初期投入設定（ADMIN_SEED = "表示名:ユーザー名:パスワード,..."） */
@@ -102,17 +103,7 @@ export function isAdmin(req) {
     const username = verifyToken(m[1]);
     if (username) return username;
   }
-  /* レガシー: x-admin-key ヘッダ（移行期の運用用。設定されていれば許可） */
-  const header = req.headers && req.headers['x-admin-key'];
-  if (header && checkAdminKey(header)) return 'legacy-key';
   return null;
-}
-
-export function checkAdminKey(candidate) {
-  if (!adminEnabled()) return false;
-  const ab = Buffer.from(String(candidate || ''));
-  const bb = Buffer.from(key());
-  return ab.length === bb.length && timingSafeEqual(ab, bb);
 }
 
 /* CSRF: 変更系POSTはカスタムヘッダ必須（クロスオリジンからは送れない） */
