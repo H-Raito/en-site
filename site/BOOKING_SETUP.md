@@ -35,17 +35,19 @@
 
 1. EmailJS でテンプレートを2つ作成（宿泊者向け / 運営者向け）
 2. テンプレート変数: `{{booking_id}} {{guest_name}} {{checkin}} {{checkout}} {{nights}} {{adults}} {{children}} {{total}} {{options}} {{arrival_time}} {{notes}} {{facility_address}} {{facility_tel}} {{to_email}}`
-3. Vercel 環境変数: `EMAILJS_SERVICE_ID` `EMAILJS_TEMPLATE_CUSTOMER` `EMAILJS_TEMPLATE_OWNER` `EMAILJS_PUBLIC_KEY` `EMAILJS_PRIVATE_KEY` `OWNER_EMAIL`
+3. Vercel 環境変数: `EMAILJS_SERVICE_ID` `EMAILJS_TEMPLATE_CUSTOMER` `EMAILJS_TEMPLATE_OWNER` `EMAILJS_TEMPLATE_THANKYOU`（チェックアウト翌日のお礼メール用） `EMAILJS_PUBLIC_KEY` `EMAILJS_PRIVATE_KEY` `OWNER_EMAIL`
 
 ### 4. 管理・運用
 
 1. `ADMIN_KEY`（32文字以上のランダム文字列・署名鍵として使用）を Vercel に設定
 2. `ADMIN_SEED`（`表示名:ユーザー名:パスワード,...` 形式）を Vercel に設定 → `/admin/` にユーザー名とパスワードでログイン
-2. 運営者ダッシュボードで: 予約一覧 / カレンダー / 受付停止 / 手動予約 / キャンセル・返金 / メール再送
+3. 運営者ダッシュボードで: 予約一覧 / カレンダー / 受付停止 / 手動予約 / キャンセル・返金・入金記録 / メール再送
+4. `CRON_SECRET`（ランダム文字列）を Vercel に設定 → Vercel Cron が毎日自動実行（期限解放・メール再送・お礼メール）。手動実行は `Authorization: Bearer <CRON_SECRET>` ヘッダ付きで呼ぶ
+5. `SITE_URL`（`https://en-kyoto.vercel.app`）を Vercel に設定 → Stripeの決済後の戻り先URLを確定する
 
 ### 5. 料金・ポリシーの確定（最重要）
 
-以下が**運営者の正式承認を要します**（現在は開発初期値）:
+**料金は運営者承認済みの確定値です**（仕様書 docs/en/SPECIFICATION.md と同一）:
 
 - 1泊基本料金（現在の初期値: 48,000円・4名まで）
 - 追加人数料金（現在の初期値: 5名目から6,000円/名）

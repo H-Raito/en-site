@@ -1,6 +1,6 @@
 # EN 予約システム 技術設計
 
-最終更新: 2026-11-05。見直し: アーキテクチャ変更時。
+最終更新: 2026-11-10。見直し: アーキテクチャ変更時。
 
 ## アーキテクチャ
 
@@ -42,7 +42,7 @@ site/
 │   ├── stripe-webhook.js # POST 決済結果反映（正式経路）
 │   ├── cron.js         # GET 期限解放・メール再送・お礼メール
 │   └── admin.js        # GET/POST 管理ルーター
-└── test/booking.test.mjs # node:test 29件
+└── test/booking.test.mjs # node:test
 ```
 
 ## データベーススキーマ
@@ -68,7 +68,7 @@ site/
 | online_total | INT | オンライン決済額（=price_jpy） |
 | onsite_amount | INT | 現地支払予定額 |
 | status | TEXT | 状態（下記参照） |
-| stripe_session_id | TEXT UNIQUE | Checkout Session |
+| stripe_session_id | TEXT | Checkout Session |
 | payment_intent_id | TEXT | 決済Intent |
 | refund_id / refund_amount | | 返金記録 |
 | email_status | TEXT | pending/sent/failed/skipped |
@@ -76,6 +76,7 @@ site/
 | admin_memo | TEXT | 管理メモ |
 | source | TEXT | web / manual |
 | expires_at | TIMESTAMPTZ | 仮予約期限 |
+| paid_at | TIMESTAMPTZ | 手動予約の入金記録時刻（売上集計に使用） |
 
 ### blocked_dates
 date PK / reason

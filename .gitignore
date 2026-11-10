@@ -3,7 +3,6 @@ node_modules/
 .DS_Store
 .env.local
 .env.example
-!site/.env.example
 *.png
 !site/image/*.png
 !site/image/*.JPG
@@ -36,3 +35,4 @@ image/
 .vercel
 .env*
 .env.vercel
+!site/.env.example
