@@ -721,3 +721,20 @@ test('api: 決済ONで予約作成が500にならずprice_detailに人数・泊�
     delete globalThis.__enTestStripe;
   }
 });
+
+test('api: admin logout はサーバーでクッキーを無効化する（Issue #6）', async () => {
+  process.env.ADMIN_KEY = 'test-admin-key-123';
+  const { issueToken } = await import('../lib/admin-auth.js');
+  const mod = await import('../api/admin.js');
+  const cookie = 'en_admin=' + issueToken('admin');
+  const { req, res } = makeReqRes('POST', '/api/admin.js?action=logout', {}, { cookie, 'x-requested-with': 'XMLHttpRequest' });
+  await mod.default(req, res);
+  assert.equal(res.statusCode, 200);
+  const sc = res.hs['Set-Cookie'] || '';
+  assert.ok(sc.includes('Max-Age=0'), 'クッキー無効化: ' + sc);
+  assert.ok(sc.includes('HttpOnly'), sc);
+  /* CSRFヘッダなしのlogoutは403 */
+  const r2 = makeReqRes('POST', '/api/admin.js?action=logout', {}, { cookie });
+  await mod.default(r2.req, r2.res);
+  assert.equal(r2.res.statusCode, 403);
+});
