@@ -901,3 +901,58 @@ test('api: 同一連絡先の未完了仮予約があると pending_exists で40
     delete globalThis.__enTestStripe;
   }
 });
+
+test('api: 管理者パスワード変更と無効化（Issue #12）', async () => {
+  process.env.ADMIN_KEY = 'test-admin-key-0123456789abcdef-32chars';
+  process.env.ADMIN_SEED = 'サイト管理者:adminY:testpass123,サブ:subY:testpass456';
+  const mod = await import('../api/admin.js');
+  const H = { cookie: 'x', 'x-requested-with': 'XMLHttpRequest' };
+  const login = makeReqRes('POST', '/api/admin.js?action=login', { username: 'adminY', password: 'testpass123' }, H);
+  await mod.default(login.req, login.res);
+  assert.equal(login.res.statusCode, 200);
+  H.cookie = login.res.hs['Set-Cookie'].replace(/; .*/, '');
+  /* パスワード変更（12文字未満は拒否） */
+  const weak = makeReqRes('POST', '/api/admin.js?action=account.change-password', { action: 'account.change-password', current: 'testpass123', next: 'short' }, H);
+  await mod.default(weak.req, weak.res);
+  assert.equal(weak.res.statusCode, 400);
+  assert.equal(weak.res.payload.error, 'weak_password');
+  /* 正しい変更 → 旧パスワードでログイン不可・新パスワードで可 */
+  const chg = makeReqRes('POST', '/api/admin.js?action=account.change-password', { action: 'account.change-password', current: 'testpass123', next: 'newpass-12345678' }, H);
+  await mod.default(chg.req, chg.res);
+  assert.equal(chg.res.statusCode, 200);
+  const oldLogin = makeReqRes('POST', '/api/admin.js?action=login', { username: 'adminY', password: 'testpass123' }, {});
+  await mod.default(oldLogin.req, oldLogin.res);
+  assert.equal(oldLogin.res.statusCode, 401);
+  const newLogin = makeReqRes('POST', '/api/admin.js?action=login', { username: 'adminY', password: 'newpass-12345678' }, {});
+  await mod.default(newLogin.req, newLogin.res);
+  assert.equal(newLogin.res.statusCode, 200);
+  /* 自分の無効化は不可 */
+  const self = makeReqRes('POST', '/api/admin.js?action=admin.set-enabled', { action: 'admin.set-enabled', username: 'adminY', disabled: true }, H);
+  await mod.default(self.req, self.res);
+  assert.equal(self.res.statusCode, 400);
+  assert.equal(self.res.payload.error, 'cannot_disable_self');
+  /* subY を無効化 → subY のクッキーは401 → 再有効化で復帰 */
+  const login2 = makeReqRes('POST', '/api/admin.js?action=login', { username: 'subY', password: 'testpass456' }, {});
+  await mod.default(login2.req, login2.res);
+  const { issueToken } = await import('../lib/admin-auth.js');
+  const subCookie2 = 'en_admin=' + issueToken('subY');
+  const subList = makeReqRes('GET', '/api/admin.js?action=bookings.list', null, { cookie: subCookie2 });
+  await mod.default(subList.req, subList.res);
+  assert.equal(subList.res.statusCode, 200);
+  const dis = makeReqRes('POST', '/api/admin.js?action=admin.set-enabled', { action: 'admin.set-enabled', username: 'subY', disabled: true }, H);
+  await mod.default(dis.req, dis.res);
+  assert.equal(dis.res.statusCode, 200);
+  const subList2 = makeReqRes('GET', '/api/admin.js?action=bookings.list', null, { cookie: subCookie2 });
+  await mod.default(subList2.req, subList2.res);
+  assert.equal(subList2.res.statusCode, 401, '無効化された管理者のクッキーは401');
+  const reEn = makeReqRes('POST', '/api/admin.js?action=admin.set-enabled', { action: 'admin.set-enabled', username: 'subY', disabled: false }, H);
+  await mod.default(reEn.req, reEn.res);
+  assert.equal(reEn.res.statusCode, 200);
+  const subList3 = makeReqRes('GET', '/api/admin.js?action=bookings.list', null, { cookie: subCookie2 });
+  await mod.default(subList3.req, subList3.res);
+  assert.equal(subList3.res.statusCode, 200, '再有効化で復帰');
+  /* admin.list に載る */
+  const list = makeReqRes('GET', '/api/admin.js?action=admin.list', null, H);
+  await mod.default(list.req, list.res);
+  assert.ok(list.res.payload.admins.some((a) => a.username === 'adminY'));
+});
