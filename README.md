@@ -13,7 +13,7 @@
 | `docs/en/` | 仕様書・技術設計・公開チェックリスト（正本ドキュメント） |
 | ルート直下のNext.js関連ファイル | 放棄された初期プロトタイプ。`.gitignore` 対象でリポジトリには含まれない |
 
-本番では `site/` 配下のみがデプロイ対象です（`site/vercel.json` で制御）。
+本番では `site/` 配下のみがデプロイ対象です（Vercel プロジェクト設定の Root Directory = `site` で決まる。`site/vercel.json` はセキュリティヘッダと cron の設定のみを持つ）。
 
 ## 技術スタック
 
@@ -52,7 +52,7 @@ GitHub への push で Vercel が自動デプロイします:
 
 運営者向けの手順は `site/BOOKING_SETUP.md` を参照。
 秘密値はリポジトリに含めない運用です（`.env*` はgitignore済み・`site/.env.example` はプレースホルダのみ）。
-実値は Vercel 環境 DATABASE_URL / STRIPE_* / ADMIN_SEED / ADMIN_KEY / EMAILJS_* / CRON_SECRET で管理。
+実値は Vercel 環境 DATABASE_URL / STRIPE_* / ADMIN_SEED / ADMIN_KEY（32文字以上） / EMAILJS_* / CRON_SECRET / BOOKING_PAYMENTS_ENABLED / OWNER_EMAIL / SITE_URL で管理。
 
 ## 開発フロー
 
