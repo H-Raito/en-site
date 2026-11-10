@@ -31,8 +31,9 @@ export default async function handler(req, res) {
       json(res, 503, { error: 'admin_not_configured' });
       return;
     }
-    const username = capStr(String((body && body.username) || q.get('username') || ''), 40);
-    const password = String((body && body.password) || q.get('password') || '');
+    /* 資格情報はPOST本文のみ受け付ける（URLはアクセス記録に残る・Issue #7） */
+    const username = capStr(String((body && body.username) || ''), 40);
+    const password = String((body && body.password) || '');
     if (!username || !password) {
       json(res, 400, { error: 'invalid input' });
       return;
@@ -79,9 +80,9 @@ export default async function handler(req, res) {
         json(res, 503, { error: 'not_configured' });
         return;
       }
-      /* セットアップ中のDBエラーは原因を画面に見せる（本番運用時は削除可） */
+      /* DBエラーの詳細はサーバーログのみに残す（ログイン前の応答に含めない・Issue #7） */
       console.error('login db error:', err);
-      json(res, 502, { error: 'db_setup_failed', detail: String(err.message || err).slice(0, 160) });
+      json(res, 502, { error: 'db_setup_failed' });
       return;
     }
     return;
