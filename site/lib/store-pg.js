@@ -454,6 +454,17 @@ export function createPgStore(databaseUrl) {
       return rows.rows.map((r) => ({ action: r.action, detail: r.detail, created_at: new Date(r.created_at).getTime() }));
     },
 
+    /* 15分以内のログイン失敗回数（サーバーをまたいで効く試行制限・Issue #14） */
+    async countRecentLoginFailures(username) {
+      const pool = await db();
+      const rows = await pool.query(
+        `SELECT count(*)::int AS c FROM admin_log
+         WHERE action = 'login_failed' AND detail->>'username' = $1 AND created_at > now() - interval '15 minutes'`,
+        [username]
+      );
+      return rows.rows[0].c;
+    },
+
     async ensureAdminUsers(entries) {
       const pool = await db();
       for (const e of entries) {

@@ -1,4 +1,5 @@
 // 予約システム共通ユーティリティ（日付はすべて 'YYYY-MM-DD' 文字列で扱う・日本時間基準）
+import { randomBytes } from 'node:crypto';
 
 export function tokyoToday() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo' }).format(new Date());
@@ -38,10 +39,11 @@ export function nightsBetween(checkin, checkout) {
   return Math.round((dateToUTC(parseDate(checkout)) - dateToUTC(parseDate(checkin))) / 86400000);
 }
 
-/* 予約番号: EN-<base36時刻>-<乱数4> （一意性はストア側でも保証） */
+/* 予約番号: EN-<base36時刻>-<乱数4> （一意性はストア側でも保証）。
+   乱数部は crypto.randomBytes（Math.random は予測可能性が保証されない・Issue #14） */
 export function newBookingId() {
   const t = Date.now().toString(36).toUpperCase();
-  const r = Math.random().toString(36).slice(2, 6).toUpperCase();
+  const r = randomBytes(3).toString('hex').toUpperCase();
   return 'EN-' + t + '-' + r;
 }
 

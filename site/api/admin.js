@@ -5,7 +5,6 @@
 import { getStore } from '../lib/store.js';
 import {
   adminEnabled, isAdmin, issueToken, csrfOk,
-  loginBlocked, recordLoginFailure, clearLoginFailures,
   adminSeedEntries, hashPassword, verifyPassword,
 } from '../lib/admin-auth.js';
 import { sendBookingEmails } from '../lib/email.js';
@@ -19,6 +18,8 @@ function json(res, code, obj) {
 /* 管理者シード済みキャッシュ（モジュールスコープ）: 同一Functionインスタンス内では
    ログインのたびに管理者アカウントを再INSERTしない（コールドスタート後の最初のログインでのみ実行） */
 let adminSeedCache = null;
+/* ユーザー不在時のタイミング均し用ダミー検証に使うハッシュ（Issue #14） */
+const TIMING_DUMMY_HASH = hashPassword('en-timing-equalizer', '0123456789abcdef');
 
 export default async function handler(req, res) {
   const q = new URLSearchParams((req.url.split('?')[1]) || '');
@@ -38,7 +39,11 @@ export default async function handler(req, res) {
       json(res, 400, { error: 'invalid input' });
       return;
     }
-    if (loginBlocked(username)) {
+    /* 試行制限は admin_log の失敗記録で数える（サーバーをまたいで有効・Issue #14）。
+       ただしログインは store を必要とするため、ここではストアを先に取得する */
+    const storeEarly = await getStoreOr503(res);
+    if (!storeEarly) return;
+    if (await storeEarly.countRecentLoginFailures(username) >= 5) {
       json(res, 429, { error: 'too_many_attempts' });
       return;
     }
@@ -52,7 +57,7 @@ export default async function handler(req, res) {
       return;
     }
     try {
-      const store = await getStore();
+      const store = storeEarly;
       /* シードは同一インスタンス内で1回だけ実行する */
       if (adminSeedCache !== process.env.ADMIN_SEED) {
         await store.ensureAdminUsers(
@@ -63,13 +68,13 @@ export default async function handler(req, res) {
         adminSeedCache = process.env.ADMIN_SEED;
       }
       const user = await store.getAdminUser(username);
+      /* ユーザー不在でも同じ計算を行い、応答時間から存在を推測できないようにする（Issue #14） */
+      if (!user) verifyPassword(password, TIMING_DUMMY_HASH);
       if (!user || !verifyPassword(password, user.passHash)) {
-        recordLoginFailure(username);
         await store.logAdmin('login_failed', { username });
         json(res, 401, { error: 'invalid_credentials' });
         return;
       }
-      clearLoginFailures(username);
       const token = issueToken(username);
       /* ヘッダはレスポンス送信前に設定する（json()の後では無効になる） */
       res.setHeader('Set-Cookie', 'en_admin=' + token + '; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=28800');
@@ -441,6 +446,19 @@ async function routeAction(action, req, res, q, body, username, store) {
     }
     default:
       json(res, 400, { error: 'unknown action' });
+  }
+}
+
+/* getStore の失敗を503応答に変換するヘルパー（loginの試行制限で使用・Issue #14） */
+async function getStoreOr503(res) {
+  try {
+    return await getStore();
+  } catch (err) {
+    if (err.code === 'not_configured') {
+      json(res, 503, { error: 'not_configured' });
+      return null;
+    }
+    throw err;
   }
 }
 
