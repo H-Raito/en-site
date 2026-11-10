@@ -956,3 +956,25 @@ test('api: 管理者パスワード変更と無効化（Issue #12）', async () 
   await mod.default(list.req, list.res);
   assert.ok(list.res.payload.admins.some((a) => a.username === 'adminY'));
 });
+
+test('api: ログイン試行制限は失敗記録で効く・存在しないユーザー名も制限対象（Issue #14）', async () => {
+  process.env.ADMIN_KEY = 'test-admin-key-0123456789abcdef-32chars';
+  process.env.ADMIN_SEED = 'サイト管理者:adminZ:testpass123';
+  const mod = await import('../api/admin.js');
+  for (let i = 0; i < 5; i++) {
+    const f = makeReqRes('POST', '/api/admin.js?action=login', { username: 'adminZ', password: 'wrong-' + i }, {});
+    await mod.default(f.req, f.res);
+    assert.equal(f.res.statusCode, 401);
+  }
+  const blocked = makeReqRes('POST', '/api/admin.js?action=login', { username: 'adminZ', password: 'testpass123' }, {});
+  await mod.default(blocked.req, blocked.res);
+  assert.equal(blocked.res.statusCode, 429, '正しいパスワードでも5回失敗後は429');
+  for (let i = 0; i < 5; i++) {
+    const f = makeReqRes('POST', '/api/admin.js?action=login', { username: 'ghost-user', password: 'x' }, {});
+    await mod.default(f.req, f.res);
+    assert.equal(f.res.statusCode, 401);
+  }
+  const blocked2 = makeReqRes('POST', '/api/admin.js?action=login', { username: 'ghost-user', password: 'x' }, {});
+  await mod.default(blocked2.req, blocked2.res);
+  assert.equal(blocked2.res.statusCode, 429, '存在しないユーザー名も制限される');
+});

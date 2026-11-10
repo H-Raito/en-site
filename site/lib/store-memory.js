@@ -312,6 +312,14 @@ export function createMemoryStore() {
     async listAdminLogs(limit = 100) {
       return adminLogs.slice(-limit).reverse();
     },
+
+    /* 15分以内のログイン失敗回数（Issue #14） */
+    async countRecentLoginFailures(username) {
+      const windowStart = Date.now() - 15 * 60 * 1000;
+      return adminLogs.filter((l) => l.action === 'login_failed'
+        && l.detail && l.detail.username === username
+        && l.created_at > windowStart).length;
+    },
   };
   return store;
 }
