@@ -139,7 +139,7 @@ createPendingBooking は Postgres トランザクション内で:
 5. 競合なしなら INSERT（pending_payment・expires_at=now()+30分）
 
 受付停止（addBlockedRange）も同じ鍵を取るため、予約と受付停止の同時実行も直列化される。
-アクティブ = confirmed または (pending_payment かつ expires_at > now())。
+アクティブ = confirmed または (pending_payment/expired かつ expires_at から15分の猶予内)。猶予は支払い境界で「払ったのに予約がない/二重予約」を防ぐため（Issue #9）。
 期限判定はクエリごとに行うため、Cron遅延でも整合する。
 メモリストアは直列化ミューテックスで同等の排他を提供（テスト専用）。
 

@@ -183,12 +183,15 @@ test('store: 同日チェックアウト/チェックインは許容', async () 
   assert.ok(second.id);
 });
 
-test('store: 期限切れ仮予約は自動解放', async () => {
+test('store: 期限切れ仮予約は支払い猶予の後に解放される（Issue #9）', async () => {
   const s = await makeStore();
   await seedBooking(s, '2026-12-01', '2026-12-03');
   const released = await s.expireStale(Date.now() + 31 * 60 * 1000);
   assert.equal(released.length, 1);
-  assert.equal(await s.findActive('2026-12-01', '2026-12-03'), null);
+  /* 猶予内（expires_at から15分）は空きにしない（支払い競合の二重予約防止） */
+  assert.notEqual(await s.findActive('2026-12-01', '2026-12-03'), null, '猶予内は解放しない');
+  await s.updateBooking((await s.listBookings({}))[0].id, { expires_at: Date.now() - 16 * 60 * 1000 });
+  assert.equal(await s.findActive('2026-12-01', '2026-12-03'), null, '猶予後は解放される');
 });
 
 test('store: confirmBookingは冪等', async () => {
@@ -757,4 +760,32 @@ test('auth: x-admin-key の裏口は撤去済み・ADMIN_KEY は32文字以上�
   } finally {
     if (prev === undefined) delete process.env.ADMIN_KEY; else process.env.ADMIN_KEY = prev;
   }
+});
+
+test('booking: 支払い猶予内の期限切れ予約は確定でき、猶予後は解放される（Issue #9）', async () => {
+  const store = await makeStore();
+  const GRACE = 15 * 60 * 1000;
+  /* 30分後まで有効な仮予約を作り、期限切れにする（expires_at は未来のまま残る） */
+  const a = await seedBooking(store, '2027-08-01', '2027-08-03');
+  await store.expireStale(Date.now() + 31 * 60000);
+  const a2 = await store.getBooking(a.id);
+  assert.equal(a2.status, 'expired');
+  /* 猶予内（expires_at から15分）は確定できる（Webhook復活経路） */
+  const r = await store.confirmBooking(a.id, 'pi_grace');
+  assert.equal(r.booking.status, 'confirmed');
+  /* 猶予内の期限切れは空きとして扱われない（ケース2の二重予約防止） */
+  const b = await seedBooking(store, '2027-08-10', '2027-08-12');
+  await store.expireStale(Date.now() + 31 * 60000);
+  let blocked = false;
+  try { await seedBooking(store, '2027-08-10', '2027-08-12'); } catch (e) { blocked = e.code === 'unavailable'; }
+  assert.equal(blocked, true, '猶予内の期限切れは空きとして扱わない');
+  /* 猶予後は解放され、確定もできない */
+  const c = await seedBooking(store, '2027-08-20', '2027-08-22');
+  await store.updateBooking(c.id, { expires_at: Date.now() - GRACE - 60000 });
+  await store.expireStale();
+  const d = await seedBooking(store, '2027-08-20', '2027-08-22');
+  assert.ok(d, '猶予後は同じ日程の予約が作れる');
+  let refused = false;
+  try { await store.confirmBooking(c.id, 'pi_late'); } catch (e) { refused = e.code === 'invalid_status'; }
+  assert.equal(refused, true, '猶予後の確定は拒否');
 });

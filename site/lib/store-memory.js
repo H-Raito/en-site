@@ -18,9 +18,16 @@ export function createMemoryStore() {
     return run;
   }
 
+  /* 支払い猶予: expires_at を過ぎても15分は空きにせず、Webhookでの確定も許す（Issue #9） */
+  const PAYMENT_GRACE_MS = 15 * 60 * 1000;
+
   function active(b) {
-    return (b.status === 'confirmed' || b.status === 'pending_payment') &&
-      !(b.status === 'pending_payment' && b.expires_at && b.expires_at <= Date.now());
+    if (b.status === 'confirmed') return true;
+    if (b.status === 'pending_payment' || b.status === 'expired') {
+      if (!b.expires_at) return b.status === 'pending_payment';
+      return b.expires_at + PAYMENT_GRACE_MS > Date.now();
+    }
+    return false;
   }
 
   function nightSet(list) {
@@ -120,7 +127,8 @@ export function createMemoryStore() {
         const b = bookings.find((x) => x.id === id);
         if (!b) { const e = new Error('not found'); e.code = 'not_found'; throw e; }
         if (b.status === 'confirmed') return { booking: { ...b }, changed: false };
-        if (b.status !== 'pending_payment') {
+        const withinGrace = b.expires_at && b.expires_at + PAYMENT_GRACE_MS > Date.now();
+        if (b.status !== 'pending_payment' && !(b.status === 'expired' && withinGrace)) {
           const e = new Error('invalid status: ' + b.status);
           e.code = 'invalid_status';
           throw e;
